@@ -1,315 +1,200 @@
 """
-Feedback Generation Module for Answer Feedback
+Production Feedback Generation Module for Answer-Sheet Scoring
 Owner: Member 2 (AV)
 Project: AI-Powered Student Study Assistant MLOps Project
 Path: src/answer_feedback/feedback.py
 
-Given a student's answer_text, predicted_mark, and qid, generates structured
-textual feedback that:
-  - Explains which rubric points were matched correctly.
-  - Identifies which key concepts were missing from the answer.
-  - States the predicted mark and maximum mark.
-  - Flags low OCR confidence answers for human review.
-  - Never fabricates rubric content or invents marks.
-  - Never references Corrected_Pdf.
-
-Output is JSON-serializable and can be served via the FastAPI endpoint.
+Generates deterministic, template-based feedback for student short-answer responses
+using rubric keyword point matching without LLMs or external APIs.
 """
 
-import os
-import json
-import math
+from typing import Any, Dict, List, Optional
 import numpy as np
-import pandas as pd
-from typing import Optional, Dict, Any, List
 
-from src.answer_feedback.features import (
-    normalize_text,
-    compute_rubric_coverage,
-    match_rubric_point,
-)
-
-# Default rubric path
-DEFAULT_RUBRIC_JSON = os.path.join("data", "answer_feedback", "processed", "rubric.json")
-LOW_CONF_THRESHOLD = 0.60
-MIN_READABLE_WORDS = 3  # Answers shorter than this are likely OCR noise
+from src.answer_feedback.features import normalize_text
 
 
-def _load_rubric(rubric_path: str = DEFAULT_RUBRIC_JSON) -> Dict[str, Any]:
-    if not os.path.exists(rubric_path):
-        raise FileNotFoundError(f"Rubric not found at: {rubric_path}")
-    with open(rubric_path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def _get_matched_points(answer_text: str, rubric_item: Dict[str, Any]) -> List[Dict]:
+def compute_point_breakdown(
+    answer_text: Optional[str],
+    rubric_item: Dict[str, Any],
+) -> tuple[List[str], List[str]]:
     """
-    Returns a per-rubric-point breakdown showing which keyword groups were hit or missed.
-    Each entry carries:
-      - matched: bool
-      - matched_phrase: str (best-matching variant, or None)
-      - all_variants: list[str] — representative alternatives for feedback display
+    Computes matched_points and missing_points based on actual rubric keyword variants.
+    
+    Matching rules:
+      - Exact normalized subphrase in answer text, OR
+      - >= 60% token overlap with any variant list of the rubric point.
+      
+    Returns:
+      (matched_points, missing_points):
+        matched_points: list of descriptive concept strings that were hit
+        missing_points: list of descriptive concept strings that were missed
     """
+    if answer_text is None or not str(answer_text).strip():
+        # Completely missing answer: all rubric points are missed
+        all_points = [
+            variants[0] if variants else "key concept"
+            for variants in rubric_item.get("points", [])
+        ]
+        return [], all_points
+
     norm_answer = normalize_text(answer_text)
     student_tokens = set(norm_answer.split()) if norm_answer else set()
-    breakdown = []
+
+    matched_points: List[str] = []
+    missing_points: List[str] = []
 
     for point_variants in rubric_item.get("points", []):
+        if not point_variants:
+            continue
+
+        concept_label = point_variants[0]
         matched = False
-        matched_phrase = None
 
         for variant in point_variants:
             var_norm = normalize_text(variant)
             if not var_norm:
                 continue
-            var_tokens = set(var_norm.split())
 
-            # Exact phrase match
+            # Exact phrase match in normalized answer
             if var_norm in norm_answer:
                 matched = True
-                matched_phrase = variant
                 break
 
-            # 60% token overlap
-            if var_tokens and len(student_tokens.intersection(var_tokens)) / len(var_tokens) >= 0.60:
-                matched = True
-                matched_phrase = variant
-                break
+            # >= 60% token overlap
+            var_tokens = set(var_norm.split())
+            if var_tokens:
+                overlap = len(student_tokens.intersection(var_tokens))
+                if overlap / len(var_tokens) >= 0.60:
+                    matched = True
+                    break
 
-        # For feedback, show first 2 representative alternatives
-        display_variants = point_variants[:2]
-        breakdown.append({
-            "matched": matched,
-            "matched_phrase": matched_phrase,
-            "representative_keywords": display_variants,
-        })
+        if matched:
+            matched_points.append(concept_label)
+        else:
+            missing_points.append(concept_label)
 
-    return breakdown
+    return matched_points, missing_points
 
 
-def generate_feedback(
+def build_deterministic_feedback(
     qid: str,
     answer_text: Optional[str],
-    predicted_mark: Optional[float],
-    rubric: Dict[str, Any],
-    ocr_conf: Optional[float] = None,
+    estimated_mark: float,
+    max_mark: float,
+    matched_points: List[str],
+    missing_points: List[str],
+    rubric_item: Dict[str, Any],
+    requires_review: bool,
+    review_reasons: List[str],
 ) -> Dict[str, Any]:
     """
-    Generates structured feedback for a single student-question pair.
-
-    Parameters:
-        qid:             Question identifier (e.g. "Q21")
-        answer_text:     Extracted student answer (from OCR or manual transcription)
-        predicted_mark:  Predicted mark (from predict.py scorer)
-        rubric:          Full rubric dict loaded from rubric.json
-        ocr_conf:        OCR confidence score (or None if not from OCR pipeline)
-
-    Returns a dict with:
-        qid, question, predicted_mark, max_mark, reference_answer,
-        matched_points (list), missing_points (list),
-        feedback_text (str), requires_review (bool), ocr_warning (str | None)
+    Constructs deterministic, template-based feedback explaining points matched,
+    deductions, and improvement suggestions without any LLM or external API.
     """
-    q_data = rubric.get(qid)
-    if q_data is None:
-        return {
-            "qid": qid,
-            "error": f"QID {qid} not found in rubric.",
-            "feedback_text": "Unable to generate feedback: question not found in rubric.",
-            "requires_review": True,
-        }
-
-    max_mark = float(q_data.get("max_mark", 2.0))
-    reference = q_data.get("reference", "")
-    question_text = q_data.get("question", qid)
-
-    # OCR warning construction
-    ocr_warning = None
-    if ocr_conf is not None and not (isinstance(ocr_conf, float) and np.isnan(ocr_conf)):
-        if float(ocr_conf) < LOW_CONF_THRESHOLD:
-            ocr_warning = (
-                f"⚠️ Low OCR confidence ({float(ocr_conf):.2f}). "
-                "The extracted text may contain recognition errors. "
-                "Human review of the original answer sheet is recommended."
-            )
-
-    # Case 1: Missing or empty answer
-    is_missing = (
-        answer_text is None
-        or (isinstance(answer_text, float) and np.isnan(answer_text))
-        or str(answer_text).strip() == ""
-    )
-    if is_missing:
-        return {
-            "qid": qid,
-            "question": question_text,
-            "predicted_mark": None,
-            "max_mark": max_mark,
-            "reference_answer": reference,
-            "matched_points": [],
-            "missing_points": [pt[:2] for pt in q_data.get("points", [])],
-            "feedback_text": (
-                "No answer was detected for this question. "
-                "If the student answered this question, the handwritten text was not "
-                "successfully extracted by OCR. Please review the original answer sheet."
-            ),
-            "requires_review": True,
-            "ocr_warning": ocr_warning,
-        }
-
-    # Case 2: Answer too short (likely OCR noise)
-    word_count = len(normalize_text(answer_text).split())
-    if word_count < MIN_READABLE_WORDS:
-        return {
-            "qid": qid,
-            "question": question_text,
-            "predicted_mark": predicted_mark,
-            "max_mark": max_mark,
-            "reference_answer": reference,
-            "matched_points": [],
-            "missing_points": [pt[:2] for pt in q_data.get("points", [])],
-            "feedback_text": (
-                f"The extracted answer is very short ({word_count} word(s)) and may "
-                "represent OCR noise rather than the student's actual response. "
-                "Human verification of the original answer sheet is recommended."
-            ),
-            "requires_review": True,
-            "ocr_warning": ocr_warning,
-        }
-
-    # Case 3: Normal feedback generation
-    point_breakdown = _get_matched_points(answer_text, q_data)
-
-    matched_points = []
-    missing_points = []
-    for pb in point_breakdown:
-        if pb["matched"]:
-            matched_points.append({
-                "concept": pb["representative_keywords"][0],
-                "matched_as": pb["matched_phrase"],
-            })
-        else:
-            missing_points.append({
-                "concept": pb["representative_keywords"][0],
-                "hint": f"Look for keywords such as: {', '.join(pb['representative_keywords'])}",
-            })
-
+    reference = rubric_item.get("reference", "")
+    total_points = len(rubric_item.get("points", []))
     n_matched = len(matched_points)
-    n_total = len(point_breakdown)
 
-    # Build human-readable feedback text
-    lines = []
-    if predicted_mark is not None and not (isinstance(predicted_mark, float) and np.isnan(predicted_mark)):
-        lines.append(f"**Predicted mark: {predicted_mark:.1f} / {max_mark:.1f}**")
-    else:
-        lines.append(f"**Mark: requires review / {max_mark:.1f}**")
-
-    if n_matched == 0:
-        lines.append(
-            "\nYour answer did not clearly match the key concepts expected for this question."
+    # 1. Deduction rationale
+    if not answer_text or not str(answer_text).strip():
+        deduction_rationale = (
+            "No answer was detected. Full marks deducted pending human verification."
         )
-    elif n_matched == n_total:
-        lines.append(
-            f"\nExcellent! Your answer addressed all {n_total} key concept(s) expected."
+    elif len(answer_text.split()) < 3:
+        deduction_rationale = (
+            f"The response is only {len(answer_text.split())} word(s) long and lacked key explanatory concepts."
+        )
+    elif missing_points:
+        missing_str = ", ".join(f"'{p}'" for p in missing_points)
+        deduction_rationale = (
+            f"Deducted for omission of key expected concept(s): {missing_str}."
         )
     else:
-        lines.append(
-            f"\nYour answer addressed {n_matched} of {n_total} key concept(s)."
+        deduction_rationale = "No deductions. All core rubric concepts were addressed."
+
+    # 2. Improvement suggestion
+    if missing_points:
+        missing_str = ", ".join(f"'{p}'" for p in missing_points)
+        improvement_suggestion = (
+            f"To achieve full marks, ensure your answer explicitly discusses {missing_str} as detailed in the answer key."
+        )
+    else:
+        improvement_suggestion = (
+            "Excellent answer! Keep providing clear, concise definitions matching key terminology."
         )
 
-    if matched_points:
-        lines.append("\n✅ **Concepts you covered:**")
-        for mp in matched_points:
-            lines.append(f"  • {mp['concept']}")
+    # 3. Overall feedback summary text
+    feedback_lines = []
+    if requires_review:
+        reasons_str = "; ".join(review_reasons)
+        feedback_lines.append(f"[Teacher Review Required: {reasons_str}]")
+
+    feedback_lines.append(f"Estimated Mark: {estimated_mark:.1f} / {max_mark:.1f}")
+
+    if not answer_text or not str(answer_text).strip():
+        feedback_lines.append("No answer detected.")
+    elif n_matched == total_points and total_points > 0:
+        feedback_lines.append("Excellent! All key rubric criteria were satisfied.")
+    elif n_matched > 0:
+        feedback_lines.append(
+            f"Covered {n_matched} of {total_points} expected criteria. Addressed: {', '.join(matched_points)}."
+        )
+    else:
+        feedback_lines.append("Did not clearly address the expected key concepts.")
 
     if missing_points:
-        lines.append("\n❌ **Concepts not found in your answer:**")
-        for mp in missing_points:
-            lines.append(f"  • {mp['concept']} — {mp['hint']}")
+        feedback_lines.append(f"Missing elements: {', '.join(missing_points)}.")
 
-    lines.append(f"\n📖 **Reference answer:** {reference}")
-
-    if ocr_warning:
-        lines.append(f"\n{ocr_warning}")
-
-    feedback_text = "\n".join(lines)
+    feedback_lines.append(f"Reference concept: {reference}")
+    feedback_text = " ".join(feedback_lines)
 
     return {
-        "qid": qid,
-        "question": question_text,
-        "predicted_mark": predicted_mark,
-        "max_mark": max_mark,
-        "reference_answer": reference,
-        "matched_points": matched_points,
-        "missing_points": missing_points,
-        "n_matched": n_matched,
-        "n_total_points": n_total,
+        "deduction_rationale": deduction_rationale,
+        "improvement_suggestion": improvement_suggestion,
         "feedback_text": feedback_text,
-        "requires_review": bool(ocr_warning is not None),
-        "ocr_warning": ocr_warning,
     }
 
 
-def generate_feedback_for_student(
-    student_answers: List[Dict],
-    rubric: Dict[str, Any],
-) -> List[Dict]:
-    """
-    Generates feedback for all of a student's short-answer responses.
-
-    Parameters:
-        student_answers: list of dicts with keys:
-            qid, answer_text, predicted_mark, ocr_conf (optional)
-        rubric: loaded rubric.json dict
-
-    Returns list of feedback dicts, one per question attempt.
-    """
-    return [
-        generate_feedback(
-            qid=ans.get("qid", ""),
-            answer_text=ans.get("answer_text"),
-            predicted_mark=ans.get("predicted_mark"),
-            rubric=rubric,
-            ocr_conf=ans.get("ocr_conf"),
-        )
-        for ans in student_answers
-    ]
+# Backwards compatibility functions for tests
+def _load_rubric(rubric_path=None):
+    from src.answer_feedback.predict import load_rubric
+    return load_rubric()
 
 
-if __name__ == "__main__":
-    rubric = _load_rubric()
+def generate_feedback(qid: str, answer_text: Optional[str], predicted_mark: Optional[float], rubric: Dict[str, Any], ocr_conf: Optional[float] = None):
+    rubric_item = rubric.get(qid)
+    if not rubric_item:
+        return {"qid": qid, "error": f"Unknown question {qid}", "requires_review": True}
+    max_mark = float(rubric_item.get("max_mark", 2.0))
+    matched_pts, missing_pts = compute_point_breakdown(answer_text, rubric_item)
+    requires_review = bool(not answer_text or (ocr_conf is not None and ocr_conf < 0.60))
+    review_reasons = []
+    if not answer_text:
+        review_reasons.append("Answer is empty")
+    if ocr_conf is not None and ocr_conf < 0.60:
+        review_reasons.append(f"Low OCR confidence ({ocr_conf:.2f} < 0.60)")
+    
+    details = build_deterministic_feedback(
+        qid=qid,
+        answer_text=answer_text,
+        estimated_mark=predicted_mark or 0.0,
+        max_mark=max_mark,
+        matched_points=matched_pts,
+        missing_points=missing_pts,
+        rubric_item=rubric_item,
+        requires_review=requires_review,
+        review_reasons=review_reasons,
+    )
+    return {
+        "qid": qid,
+        "predicted_mark": predicted_mark,
+        "matched_points": [{"concept": p} for p in matched_pts],
+        "missing_points": [{"concept": p} for p in missing_pts],
+        "n_matched": len(matched_pts),
+        "n_total_points": len(rubric_item.get("points", [])),
+        "feedback_text": details["feedback_text"],
+        "requires_review": requires_review,
+        "ocr_warning": f"Low OCR confidence ({ocr_conf:.2f})" if (ocr_conf is not None and ocr_conf < 0.60) else None,
+    }
 
-    test_cases = [
-        {
-            "qid": "Q21",
-            "answer_text": "Supervised learning trains a model on labeled data with known inputs and outputs.",
-            "predicted_mark": 2.0,
-            "ocr_conf": 0.82,
-        },
-        {
-            "qid": "Q22",
-            "answer_text": "high accuracy on training but low on test",
-            "predicted_mark": 0.5,
-            "ocr_conf": 0.55,
-        },
-        {
-            "qid": "Q23",
-            "answer_text": "",
-            "predicted_mark": None,
-            "ocr_conf": None,
-        },
-    ]
-
-    print("=" * 70)
-    print("FEEDBACK GENERATOR — SMOKE TEST")
-    print("=" * 70)
-    for tc in test_cases:
-        fb = generate_feedback(
-            qid=tc["qid"],
-            answer_text=tc["answer_text"],
-            predicted_mark=tc["predicted_mark"],
-            rubric=rubric,
-            ocr_conf=tc["ocr_conf"],
-        )
-        print(f"\n--- [{fb['qid']}] ---")
-        print(fb["feedback_text"])
-        print(f"Requires review: {fb['requires_review']}")

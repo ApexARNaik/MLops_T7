@@ -1,8 +1,8 @@
 {
   "model_name": "baseline_question_mean",
   "model_version": "1.0.0",
-  "mlflow_run_id": "f86c4da5ebe24657a87364b55c98d535",
-  "git_commit": "609ea0d7287b00c736ee645370b5bc282ef3ef0e",
+  "mlflow_run_id": "4325d0e5548a493c965402de9ec9eabd",
+  "git_commit": "438a5bda239ac75c64605b967466b0f35291e48e",
   "features": [
     "qid",
     "question_mean_mark"
