@@ -36,19 +36,29 @@ export class HeaderComponent {
     const badge = document.getElementById('system-status-badge');
     const textEl = document.getElementById('system-status-text');
     try {
-      const res = await fetch(`${this.apiBaseUrl}/ready`);
-      if (res.ok) {
-        const data = await res.json();
+      const readyRes = await fetch(`${this.apiBaseUrl}/ready`);
+      if (readyRes.ok) {
+        const data = await readyRes.json();
         this.status = { ready: true, text: `Models Ready (${data.models ? data.models.length : 2})`, models: data.models };
         if (badge && textEl) {
           badge.className = 'status-badge ready';
           textEl.textContent = this.status.text;
         }
-      } else {
-        throw new Error('API not ready');
+        return;
       }
+      // If /ready returned non-ok (e.g. 503), check if API /health is at least healthy
+      const healthRes = await fetch(`${this.apiBaseUrl}/health`).catch(() => null);
+      if (healthRes && healthRes.ok) {
+        this.status = { ready: false, text: 'API Healthy (Models Not Ready)', models: [] };
+        if (badge && textEl) {
+          badge.className = 'status-badge warning';
+          textEl.textContent = this.status.text;
+        }
+        return;
+      }
+      throw new Error('API unreachable');
     } catch (e) {
-      this.status = { ready: false, text: 'API Offline (Local Mode)', models: [] };
+      this.status = { ready: false, text: 'API Offline', models: [] };
       if (badge && textEl) {
         badge.className = 'status-badge error';
         textEl.textContent = this.status.text;

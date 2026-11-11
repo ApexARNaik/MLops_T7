@@ -107,7 +107,8 @@ def test_recommend_returns_prediction_envelope(client, monkeypatch):
     assert_request_id(response)
 
 
-def test_recommend_is_unavailable_without_model_implementation(client):
+def test_recommend_is_unavailable_without_model_implementation(client, monkeypatch):
+    monkeypatch.delattr(api.hobby, "recommend", raising=False)
     response = client.post(
         "/api/v1/hobby-learning/recommend",
         json={

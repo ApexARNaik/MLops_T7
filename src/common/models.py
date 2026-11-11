@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 import joblib
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -161,10 +161,12 @@ def check_system_readiness() -> Tuple[bool, Dict[str, Any]]:
             try:
                 meta = load_serving_metadata(key)
                 _ = load_serving_model(key)
-                models_info.append({
-                    "model_name": meta["model_name"],
-                    "model_version": meta["model_version"],
-                })
+                models_info.append(
+                    {
+                        "model_name": meta["model_name"],
+                        "model_version": meta["model_version"],
+                    }
+                )
             except Exception as e:
                 errors.append(f"{key}: {e}")
 
@@ -181,4 +183,3 @@ def check_system_readiness() -> Tuple[bool, Dict[str, Any]]:
         "models": models_info,
     }
     return is_ready, details
-

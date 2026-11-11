@@ -201,31 +201,33 @@ export class AnswerEvaluatorComponent {
     badgesContainer.innerHTML = '';
 
     try {
-      let resData;
-      try {
-        const response = await fetch(`${this.apiBaseUrl}/api/v1/answer-feedback/evaluate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+      const response = await fetch(`${this.apiBaseUrl}/api/v1/answer-feedback/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-        if (!response.ok) {
-          const errJson = await response.json().catch(() => ({}));
-          throw new Error(errJson.detail || `Server error ${response.status}`);
-        }
-        resData = await response.json();
-      } catch (e) {
-        // Fallback simulation
-        resData = this.simulateEvaluation(qid, text, ocrConf);
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const detailMsg = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+        throw new Error(detailMsg || `Server error ${response.status}`);
       }
-
+      const resData = await response.json();
       this.renderEvaluationResult(resData, qid, assessmentId);
     } catch (err) {
-      resultContent.innerHTML = `
-        <div class="alert alert-warning">
-          <strong>Evaluation Error:</strong> ${err.message}
-        </div>
-      `;
+      if (window.DEMO_MODE) {
+        const demoData = this.simulateEvaluation(qid, text, ocrConf);
+        this.renderEvaluationResult(demoData, qid, assessmentId, true);
+      } else {
+        resultContent.innerHTML = `
+          <div class="alert alert-warning">
+            <strong>Evaluation Error:</strong> ${err.message}
+            <div style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-muted);">
+              Ensure backend server is running at <code>${this.apiBaseUrl}</code>.
+            </div>
+          </div>
+        `;
+      }
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<span>Evaluate Answer</span>';
@@ -282,18 +284,30 @@ export class AnswerEvaluatorComponent {
     };
   }
 
-  renderEvaluationResult(res, qid, assessmentId) {
+  renderEvaluationResult(res, qid, assessmentId, isSimulated = false) {
     const resultContent = document.getElementById('eval-result-content');
     const badgesContainer = document.getElementById('eval-badges');
 
     const item = res.data?.results?.[0] || {};
     const reviewReq = item.human_review_required;
 
+    const simBadge = isSimulated
+      ? '<span class="badge badge-warning" style="margin-left: 0.25rem;">DEMO / SIMULATED</span>'
+      : '<span class="badge badge-success" style="margin-left: 0.25rem;">LIVE INFERENCE</span>';
+
     badgesContainer.innerHTML = `
       <span class="badge badge-info">${res.model_name || 'answer-model'} v${res.model_version || '1.0.0'}</span>
+      ${simBadge}
     `;
 
     let reviewAlert = '';
+    if (isSimulated) {
+      reviewAlert += `
+        <div class="alert alert-warning" style="margin-top: 0.5rem;">
+          <strong>DEMO / SIMULATED MODE:</strong> Backend was unreachable. This is an offline mock, not actual model output.
+        </div>
+      `;
+    }
     if (reviewReq) {
       reviewAlert = `
         <div class="alert alert-warning" style="margin-top: 0;">

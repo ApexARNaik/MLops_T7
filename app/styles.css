@@ -121,6 +121,12 @@ body {
   border-color: var(--success-border);
 }
 
+.status-badge.warning {
+  background: var(--warning-light);
+  color: #92400e;
+  border-color: var(--warning-border);
+}
+
 .status-badge.error {
   background: var(--danger-light);
   color: #991b1b;

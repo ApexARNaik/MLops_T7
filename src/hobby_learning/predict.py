@@ -210,11 +210,10 @@ def recommend(payload: Dict[str, Any]) -> Dict[str, Any]:
     hobby_entries = hobby_map.get(hobby, {})
     analogy_obj = hobby_entries.get(topic)
 
-    analogy_text: Optional[str] = None
+    analogy_result: Optional[Dict[str, Any]] = None
     if isinstance(analogy_obj, dict):
-        if analogy_obj.get("valid", True):
-            analogy_text = analogy_obj.get("analogy")
-        else:
+        analogy_result = analogy_obj
+        if not analogy_obj.get("valid", True):
             reason = analogy_obj.get("reason", "No valid mathematically accurate analogy found.")
             warnings.append(f"Hobby analogy for '{hobby}' on topic '{topic}' is marked invalid: {reason}")
     else:
@@ -240,7 +239,7 @@ def recommend(payload: Dict[str, Any]) -> Dict[str, Any]:
             "p_correct": round(p_correct, 4),
             "predicted_correct": predicted_correct,
             "weak_concepts": weak_concepts,
-            "analogy": analogy_text,
+            "analogy": analogy_result,
             "recommendation": recommendation_msg,
         },
     }

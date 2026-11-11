@@ -146,31 +146,33 @@ export class HobbyRecommenderComponent {
     badgesContainer.innerHTML = '';
 
     try {
-      let resData;
-      try {
-        const response = await fetch(`${this.apiBaseUrl}/api/v1/hobby-learning/recommend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+      const response = await fetch(`${this.apiBaseUrl}/api/v1/hobby-learning/recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-        if (!response.ok) {
-          const errJson = await response.json().catch(() => ({}));
-          throw new Error(errJson.detail || `Server returned HTTP ${response.status}`);
-        }
-        resData = await response.json();
-      } catch (networkError) {
-        // Fallback simulation mode using realistic logic if API is unreachable
-        resData = this.simulateRecommendation(payload);
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        const detailMsg = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+        throw new Error(detailMsg || `Server returned HTTP ${response.status}`);
       }
-
+      const resData = await response.json();
       this.renderResult(resData);
     } catch (err) {
-      resultContent.innerHTML = `
-        <div class="alert alert-warning">
-          <strong>Request Error:</strong> ${err.message}
-        </div>
-      `;
+      if (window.DEMO_MODE) {
+        const demoData = this.simulateRecommendation(payload);
+        this.renderResult(demoData, true);
+      } else {
+        resultContent.innerHTML = `
+          <div class="alert alert-warning">
+            <strong>Request Error:</strong> ${err.message}
+            <div style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-muted);">
+              Ensure backend server is running at <code>${this.apiBaseUrl}</code>.
+            </div>
+          </div>
+        `;
+      }
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<span>Get Learning Recommendation</span>';
@@ -226,19 +228,31 @@ export class HobbyRecommenderComponent {
     };
   }
 
-  renderResult(res) {
+  renderResult(res, isSimulated = false) {
     const resultContent = document.getElementById('hobby-result-content');
     const badgesContainer = document.getElementById('hobby-badges');
     const data = res.data || res;
     const probPercent = Math.round((data.p_correct || 0) * 100);
 
+    const simBadge = isSimulated
+      ? '<span class="badge badge-warning" style="margin-left: 0.25rem;">DEMO / SIMULATED</span>'
+      : '<span class="badge badge-success" style="margin-left: 0.25rem;">LIVE INFERENCE</span>';
+
     badgesContainer.innerHTML = `
       <span class="badge badge-info">${res.model_name || 'learning-model'} v${res.model_version || '1.0'}</span>
+      ${simBadge}
     `;
 
     let warningsHtml = '';
+    if (isSimulated) {
+      warningsHtml += `
+        <div class="alert alert-warning" style="margin-top: 0.5rem;">
+          <strong>DEMO / SIMULATED MODE:</strong> Backend was unreachable. This is an offline mock, not actual model output.
+        </div>
+      `;
+    }
     if (res.warnings && res.warnings.length > 0) {
-      warningsHtml = `
+      warningsHtml += `
         <div class="alert alert-warning" style="margin-top: 0.5rem;">
           <strong>Notice:</strong> ${res.warnings.join(' | ')}
         </div>

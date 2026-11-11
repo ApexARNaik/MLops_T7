@@ -94,70 +94,20 @@ jobs:
           fi
 
   frontend-quality:
-    name: Frontend - Quality & Build (Conditional)
+    name: Frontend - Quality & Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check for Frontend Directory
-        id: check_frontend
-        shell: bash
-        run: |
-          if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
-            echo "has_frontend=true" >> $GITHUB_OUTPUT
-          elif [ -f "package.json" ]; then
-            echo "has_frontend=root" >> $GITHUB_OUTPUT
-          else
-            echo "has_frontend=false" >> $GITHUB_OUTPUT
-            echo "No frontend package.json found in repository; skipping frontend quality steps."
-          fi
-
-      - name: Setup Node.js (if frontend present)
-        if: steps.check_frontend.outputs.has_frontend != 'false'
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: ${{ steps.check_frontend.outputs.has_frontend == 'true' && 'frontend/package-lock.json' || 'package-lock.json' }}
 
-      - name: Install Frontend Dependencies
-        if: steps.check_frontend.outputs.has_frontend != 'false'
+      - name: Validate and Build Static Frontend
         shell: bash
         run: |
-          DIR="${{ steps.check_frontend.outputs.has_frontend == 'true' && 'frontend' || '.' }}"
-          cd "$DIR"
-          npm ci
-
-      - name: Frontend Dependency Vulnerability Audit
-        if: steps.check_frontend.outputs.has_frontend != 'false'
-        shell: bash
-        run: |
-          DIR="${{ steps.check_frontend.outputs.has_frontend == 'true' && 'frontend' || '.' }}"
-          cd "$DIR"
-          npm audit --audit-level=high || true
-
-      - name: Frontend Lint & Typecheck
-        if: steps.check_frontend.outputs.has_frontend != 'false'
-        shell: bash
-        run: |
-          DIR="${{ steps.check_frontend.outputs.has_frontend == 'true' && 'frontend' || '.' }}"
-          cd "$DIR"
-          npm run lint --if-present
-          npm run typecheck --if-present
-
-      - name: Frontend Tests
-        if: steps.check_frontend.outputs.has_frontend != 'false'
-        shell: bash
-        run: |
-          DIR="${{ steps.check_frontend.outputs.has_frontend == 'true' && 'frontend' || '.' }}"
-          cd "$DIR"
-          npm test --if-present
-
-      - name: Frontend Production Build
-        if: steps.check_frontend.outputs.has_frontend != 'false'
-        shell: bash
-        run: |
-          DIR="${{ steps.check_frontend.outputs.has_frontend == 'true' && 'frontend' || '.' }}"
-          cd "$DIR"
-          npm run build --if-present
+          node scripts/build_frontend.js
+          test -f dist/index.html
+          test -f dist/config.js

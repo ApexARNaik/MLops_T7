@@ -40,28 +40,28 @@ export class ModelInspectorComponent {
     if (!container) return;
 
     try {
-      let modelsData;
-      try {
-        const res = await fetch(`${this.apiBaseUrl}/api/v1/models`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        modelsData = await res.json();
-      } catch (e) {
-        // Fallback with bundled static metadata if API not reachable
-        modelsData = {
-          request_id: 'diag-local-001',
+      const res = await fetch(`${this.apiBaseUrl}/api/v1/models`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const modelsData = await res.json();
+      this.renderModelCards(modelsData);
+    } catch (err) {
+      if (window.DEMO_MODE) {
+        // Fallback with bundled static metadata if explicit demo mode enabled
+        const demoData = {
+          request_id: 'diag-local-demo',
           models: {
             learning: {
               model_name: 'study-assistant-learning-model',
-              model_version: '1.0.0',
+              model_version: '1.0.0 (DEMO)',
               git_commit: 'e1ebc23',
               features: ['u_prev_n', 'u_prev_rate', 'u_prev_attempts_mean', 'gap_hours', 'n_concepts', 'p_rate', 'c_rate'],
               metrics: { roc_auc: 0.875, f1: 0.833, precision: 0.857, recall: 0.810 },
               trained_on: 'MOOCCubeX user-problem slice',
-              limitations: 'Slice not random; Chinese MOOC population; probability is an estimate.',
+              limitations: 'DEMO / SIMULATED fallback data.',
             },
             answer: {
               model_name: 'study-assistant-answer-scoring-model',
-              model_version: '1.0.0',
+              model_version: '1.0.0 (DEMO)',
               git_commit: 'e1ebc23',
               features: ['tfidf_cos', 'n_words', 'log_words', 'question_mean_mark'],
               metrics: {
@@ -73,29 +73,38 @@ export class ModelInspectorComponent {
                 },
               },
               trained_on: { dataset: 'Mendeley Student Examination Papers', n_students: 50, n_records: 568 },
-              limitations: ['Trained on question-level mean marks and interim OCR text.', 'Strict 5-fold GroupKFold by student_id.'],
+              limitations: ['DEMO / SIMULATED fallback data.'],
             },
           },
         };
+        this.renderModelCards(demoData, true);
+      } else {
+        container.innerHTML = `
+          <div class="alert alert-warning">
+            <strong>Model Registry Offline:</strong> Unable to connect to backend at <code>${this.apiBaseUrl}</code> (${err.message}).
+            <div style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-muted);">
+              Live registry metadata is only available when the backend server is reachable.
+            </div>
+          </div>
+        `;
       }
-
-      this.renderModelCards(modelsData);
-    } catch (err) {
-      container.innerHTML = `
-        <div class="alert alert-warning">
-          <strong>Inspection Error:</strong> ${err.message}
-        </div>
-      `;
     }
   }
 
-  renderModelCards(data) {
+  renderModelCards(data, isSimulated = false) {
     const container = document.getElementById('models-display-content');
     const m = data.models || {};
     const l = m.learning || {};
     const a = m.answer || {};
 
+    const simNotice = isSimulated
+      ? `<div class="alert alert-warning" style="margin-bottom: 1rem;">
+           <strong>DEMO / SIMULATED MODE:</strong> Live model registry is offline. Displaying static reference metadata.
+         </div>`
+      : '';
+
     container.innerHTML = `
+      ${simNotice}
       <div class="grid-2">
         <!-- Model A -->
         <div class="result-box" style="margin-top: 0;">
