@@ -47,3 +47,8 @@ jobs:
             test "$status" = "503"
             grep -q '"not_ready"' /tmp/ready.json
           fi
+
+
+
+
+
