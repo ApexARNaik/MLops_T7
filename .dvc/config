@@ -4,3 +4,8 @@
     url = ../../dvc-store-A
 ['remote "storage_b"']
     url = ../../dvc-store-B
+['remote "origin"']
+    url = https://dagshub.com/ApexARNaik/MLops_T7.dvc
+['remote "dagshub"']
+    url = s3://dvc
+    endpointurl = https://dagshub.com/ApexARNaik/MLops_T7.s3

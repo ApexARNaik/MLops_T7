@@ -1,0 +1,428 @@
+{
+  "Q21": {
+    "qid": "Q21",
+    "question": "Define Supervised Learning.",
+    "max_mark": 2.0,
+    "reference": "A type of ML where the model is trained on labeled data with known inputs and outputs.",
+    "points": [
+      [
+        "labeled data",
+        "labelled data",
+        "labeled dataset",
+        "labels",
+        "ground truth",
+        "supervised by labels"
+      ],
+      [
+        "known inputs and outputs",
+        "known input and output",
+        "input and output",
+        "input-output pairs",
+        "mapping from input to output",
+        "known targets"
+      ]
+    ]
+  },
+  "Q22": {
+    "qid": "Q22",
+    "question": "Evaluation Case Study: A model (M1) achieves 99% accuracy on the training set but only 30% accuracy on the testing set. What is happening to this model?",
+    "max_mark": 2.0,
+    "reference": "Overfitting; the model has memorized the training data but failed to generalize.",
+    "points": [
+      [
+        "overfitting",
+        "overfit",
+        "over-fitting",
+        "model is overfitted",
+        "high variance"
+      ],
+      [
+        "memorized the training data",
+        "memorized training data",
+        "memorizes the data",
+        "memorization",
+        "fits noise"
+      ],
+      [
+        "failed to generalize",
+        "fails to generalize",
+        "failure to generalize",
+        "does not generalize",
+        "unable to generalize",
+        "poor generalization"
+      ]
+    ]
+  },
+  "Q23": {
+    "qid": "Q23",
+    "question": "What is Regression Analysis?",
+    "max_mark": 2.0,
+    "reference": "A statistical process for estimating the relationships between a dependent variable and one or more independent variables.",
+    "points": [
+      [
+        "statistical process",
+        "statistical method",
+        "statistical technique",
+        "process for estimating",
+        "predictive modeling"
+      ],
+      [
+        "relationships",
+        "relationship",
+        "estimating the relationships",
+        "relation between variables",
+        "correlation"
+      ],
+      [
+        "dependent variable",
+        "target variable",
+        "outcome variable",
+        "response variable",
+        "continuous variable"
+      ],
+      [
+        "independent variables",
+        "independent variable",
+        "predictor variables",
+        "one or more independent variables",
+        "explanatory variables",
+        "features"
+      ]
+    ]
+  },
+  "Q24": {
+    "qid": "Q24",
+    "question": "List and elucidate two major challenges in Machine Learning.",
+    "max_mark": 2.0,
+    "reference": "Data quality/missing values, overfitting/underfitting, data collection, or time consumption.",
+    "points": [
+      [
+        "data quality",
+        "missing values",
+        "data collection",
+        "poor data quality",
+        "lack of data",
+        "insufficient data",
+        "noisy data"
+      ],
+      [
+        "overfitting",
+        "underfitting",
+        "over-fitting",
+        "under-fitting",
+        "overfitting or underfitting",
+        "bias-variance tradeoff"
+      ],
+      [
+        "time consumption",
+        "time consuming",
+        "computational time",
+        "high training time",
+        "resource intensive",
+        "computational cost"
+      ]
+    ]
+  },
+  "Q25": {
+    "qid": "Q25",
+    "question": "List any two major real-world applications of Data Science.",
+    "max_mark": 2.0,
+    "reference": "Healthcare/disease prediction, Finance/fraud detection, E-commerce recommendation systems.",
+    "points": [
+      [
+        "healthcare",
+        "disease prediction",
+        "medical diagnosis",
+        "health care",
+        "medicine"
+      ],
+      [
+        "finance",
+        "fraud detection",
+        "financial fraud",
+        "banking",
+        "credit scoring"
+      ],
+      [
+        "e-commerce",
+        "recommendation systems",
+        "recommender systems",
+        "recommendation",
+        "product recommendations"
+      ]
+    ]
+  },
+  "Q26": {
+    "qid": "Q26",
+    "question": "Distinguish between Structured and Semi-structured data.",
+    "max_mark": 2.0,
+    "reference": "Structured is organized in rows/columns (SQL, Excel); Semi-structured has some markers but isn't in a grid (JSON, XML, HTML).",
+    "points": [
+      [
+        "structured is organized in rows/columns",
+        "rows and columns",
+        "rows/columns",
+        "tabular",
+        "sql",
+        "excel",
+        "relational tables"
+      ],
+      [
+        "semi-structured has some markers",
+        "has some markers",
+        "not in a grid",
+        "isn't in a grid",
+        "json",
+        "xml",
+        "html",
+        "tags",
+        "markers"
+      ]
+    ]
+  },
+  "Q27": {
+    "qid": "Q27",
+    "question": "Describe methods used to detect and handle outliers in a dataset.",
+    "max_mark": 2.0,
+    "reference": "Detection: Z-score, IQR, Scatter plots, Box plots. Handling: Trimming, Capping, or Imputation.",
+    "points": [
+      [
+        "detection",
+        "z-score",
+        "iqr",
+        "interquartile range",
+        "scatter plots",
+        "scatter plot",
+        "box plots",
+        "box plot"
+      ],
+      [
+        "handling",
+        "trimming",
+        "capping",
+        "imputation",
+        "trim",
+        "cap",
+        "impute"
+      ]
+    ]
+  },
+  "Q28": {
+    "qid": "Q28",
+    "question": "What is Data Pre-processing?",
+    "max_mark": 2.0,
+    "reference": "The steps taken to clean and transform raw data into a format suitable for a machine learning model.",
+    "points": [
+      [
+        "clean",
+        "cleaning",
+        "clean raw data",
+        "handling missing values",
+        "noise removal",
+        "data cleaning"
+      ],
+      [
+        "transform",
+        "transformation",
+        "transform raw data",
+        "normalization",
+        "scaling",
+        "encoding"
+      ],
+      [
+        "suitable for a machine learning model",
+        "suitable for ml",
+        "format suitable for model",
+        "machine learning model",
+        "format suitable for machine learning"
+      ]
+    ]
+  },
+  "Q29": {
+    "qid": "Q29",
+    "question": "Why is Data Normalization required for the K-Nearest Neighbors (K-NN) algorithm?",
+    "max_mark": 2.0,
+    "reference": "K-NN is distance-based; features with larger scales will dominate the distance calculation if not normalized.",
+    "points": [
+      [
+        "distance-based",
+        "distance based",
+        "calculates distance",
+        "euclidean distance",
+        "distance calculation",
+        "distance metric"
+      ],
+      [
+        "larger scales",
+        "larger scale",
+        "features with larger scales",
+        "scale differences",
+        "different scales",
+        "larger magnitude",
+        "different units"
+      ],
+      [
+        "dominate the distance calculation",
+        "dominate",
+        "dominates",
+        "skew the distance",
+        "bias the distance",
+        "undue influence on distance"
+      ]
+    ]
+  },
+  "Q30": {
+    "qid": "Q30",
+    "question": "How are continuous attributes discretized? Give an example.",
+    "max_mark": 2.0,
+    "reference": "By grouping values into bins or intervals, e.g., turning ages 1-100 into 'Child,' 'Adult,' 'Senior.'",
+    "points": [
+      [
+        "grouping values into bins",
+        "bins or intervals",
+        "bins",
+        "intervals",
+        "binning",
+        "grouping into intervals",
+        "discrete buckets"
+      ],
+      [
+        "ages 1-100",
+        "child, adult, senior",
+        "child",
+        "adult",
+        "senior",
+        "age into categories",
+        "example of binning",
+        "turning ages into categories"
+      ]
+    ]
+  },
+  "Q31": {
+    "qid": "Q31",
+    "question": "What does the 'K' represent in the K-Means clustering algorithm?",
+    "max_mark": 2.0,
+    "reference": "The predefined number of clusters or groups the data will be divided into.",
+    "points": [
+      [
+        "predefined number",
+        "predefined",
+        "pre-defined",
+        "number chosen",
+        "fixed number",
+        "user-defined"
+      ],
+      [
+        "number of clusters",
+        "number of groups",
+        "clusters",
+        "groups",
+        "clusters the data will be divided into"
+      ]
+    ]
+  },
+  "Q32": {
+    "qid": "Q32",
+    "question": "Name three common Hyperparameters in Machine Learning algorithms.",
+    "max_mark": 2.0,
+    "reference": "K in K-NN, Learning Rate, Number of Estimators/Trees, Max Depth, or Batch Size.",
+    "points": [
+      [
+        "learning rate",
+        "alpha",
+        "step size"
+      ],
+      [
+        "k in k-nn",
+        "k in knn",
+        "number of estimators",
+        "number of trees",
+        "max depth",
+        "tree depth",
+        "n_estimators"
+      ],
+      [
+        "batch size",
+        "mini-batch size",
+        "batch size or epochs"
+      ]
+    ]
+  },
+  "Q33": {
+    "qid": "Q33",
+    "question": "Define Gradient Descent.",
+    "max_mark": 2.0,
+    "reference": "An optimization algorithm used to minimize the cost function by iteratively moving toward the steepest descent.",
+    "points": [
+      [
+        "optimization algorithm",
+        "optimization method",
+        "optimization technique",
+        "iterative algorithm",
+        "optimizer"
+      ],
+      [
+        "minimize the cost function",
+        "minimize cost function",
+        "minimize loss",
+        "minimizing the loss function",
+        "minimizing error",
+        "cost function"
+      ],
+      [
+        "steepest descent",
+        "iteratively moving",
+        "direction of steepest descent",
+        "negative gradient",
+        "moving toward steepest descent"
+      ]
+    ]
+  },
+  "Q34": {
+    "qid": "Q34",
+    "question": "Classifier Comparison: Compare three SVM classifiers based on their margins and boundaries.",
+    "max_mark": 2.0,
+    "reference": "Discussion on maximizing the margin and ensuring no data points fall within the 'gutter' or margin.",
+    "points": [
+      [
+        "maximizing the margin",
+        "maximize the margin",
+        "maximum margin",
+        "optimal margin",
+        "margin maximization"
+      ],
+      [
+        "no data points fall within the 'gutter' or margin",
+        "gutter",
+        "margin boundary",
+        "points within margin",
+        "hard margin",
+        "soft margin",
+        "boundary"
+      ]
+    ]
+  },
+  "Q35": {
+    "qid": "Q35",
+    "question": "Explain how the Radial Basis Function (RBF) Kernel works in SVM.",
+    "max_mark": 2.0,
+    "reference": "It transforms data into a higher-dimensional space to find a non-linear decision boundary.",
+    "points": [
+      [
+        "transforms data into a higher-dimensional space",
+        "higher-dimensional space",
+        "higher dimension",
+        "feature space",
+        "transforms data",
+        "mapping to higher dimension"
+      ],
+      [
+        "non-linear decision boundary",
+        "non-linear boundary",
+        "decision boundary",
+        "non-linear",
+        "separable in higher dimension"
+      ]
+    ]
+  }
+}

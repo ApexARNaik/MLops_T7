@@ -308,7 +308,19 @@ def rubric_score(answer_text: Optional[str], rubric_item: Dict[str, Any]) -> flo
 class AnswerScorer:
     """Wrapper class retained for backward compatibility with previous test suites."""
     def __init__(self, *args, **kwargs):
-        self.rubric = load_rubric()
+        rubric_path = kwargs.get("rubric_path")
+        if rubric_path and Path(rubric_path).exists():
+            with open(rubric_path, "r", encoding="utf-8") as f:
+                self.rubric = json.load(f)
+        else:
+            self.rubric = load_rubric()
+        self.model_path = kwargs.get("model_path")
+        self.model = None
+        if self.model_path and Path(self.model_path).exists():
+            try:
+                self.model = joblib.load(self.model_path)
+            except Exception:
+                self.model = None
 
     def predict(self, qid: str, answer_text: Optional[str], ocr_conf: Optional[float] = None, **kwargs) -> Dict[str, Any]:
         if qid not in self.rubric:
@@ -332,16 +344,32 @@ class AnswerScorer:
                 "ocr_conf": ocr_conf,
             }
 
-        conf_map = {qid: ocr_conf} if ocr_conf is not None else None
-        res = evaluate({qid: answer_text}, ocr_conf=conf_map)
-        item = res["data"]["results"][0]
+        rubric_item = self.rubric[qid]
+        coverage, matched_points = compute_rubric_coverage(answer_text, rubric_item)
+        r_score = rubric_score(answer_text, rubric_item)
+
+        if self.model is None:
+            pred_mark = r_score
+            method = "rubric_coverage"
+        else:
+            conf_map = {qid: ocr_conf} if ocr_conf is not None else None
+            res = evaluate({qid: answer_text}, ocr_conf=conf_map)
+            item = res["data"]["results"][0]
+            pred_mark = item["estimated_mark"]
+            method = "model"
+
+        requires_review = (
+            (ocr_conf is not None and ocr_conf < OCR_CONF_REVIEW_THRESHOLD)
+            or len(str(answer_text).split()) < MIN_WORD_COUNT
+        )
+
         return {
             "qid": qid,
-            "predicted_mark": item["estimated_mark"],
-            "prediction_method": "model",
-            "rubric_score": item["estimated_mark"],
-            "coverage": len(item["matched_points"]) / max(1, len(item["matched_points"]) + len(item["missing_points"])),
-            "max_point_hit": 1 if item["matched_points"] else 0,
-            "requires_review": item["human_review_required"],
+            "predicted_mark": pred_mark,
+            "prediction_method": method,
+            "rubric_score": r_score,
+            "coverage": coverage,
+            "max_point_hit": 1 if matched_points else 0,
+            "requires_review": requires_review,
             "ocr_conf": ocr_conf,
         }

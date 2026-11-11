@@ -1,0 +1,36 @@
+{
+  "model_name": "LogisticRegression",
+  "model_type": "linear_model",
+  "solver": "lbfgs",
+  "C": 1.0,
+  "max_iter": 1000,
+  "class_weight": "None",
+  "classification_threshold": 0.5,
+  "target_column": "correct",
+  "dataset_identifier": "data\\hobby_learning\\processed\\events.csv",
+  "train_test_split_configuration": "chronological_order_id_test_size_0.2",
+  "n_train_samples": 277488,
+  "n_test_samples": 69372,
+  "n_features": 7,
+  "features": [
+    "user_prev_count",
+    "user_prev_accuracy",
+    "user_prev_attempts_mean",
+    "user_prev_hints_mean",
+    "user_skill_prev_count",
+    "user_skill_prev_accuracy",
+    "n_skill_components"
+  ],
+  "preprocessing_configuration": {
+    "imputer": "SimpleImputer(strategy='median')",
+    "scaler": "StandardScaler()"
+  },
+  "metrics": {
+    "accuracy": 0.7105604566683965,
+    "precision": 0.7221434601844625,
+    "recall": 0.945048988951428,
+    "f1_score": 0.8186948630662682,
+    "roc_auc": 0.6589682926653941,
+    "pr_auc": 0.7906608811904621
+  }
+}

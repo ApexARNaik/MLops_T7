@@ -1,0 +1,9 @@
+{
+  "user_skill_prev_accuracy": 0.08564118709116922,
+  "user_prev_accuracy": 0.01874644756238626,
+  "user_prev_hints_mean": 0.013436731669607727,
+  "user_prev_count": 0.004199234984287203,
+  "user_prev_attempts_mean": 0.003324396491449266,
+  "n_skill_components": 0.0027019961837002173,
+  "user_skill_prev_count": 0.0016924153027110035
+}

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ai-study-assistant-api
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "pip install --no-cache-dir -r requirements-serving.txt"
+    startCommand: "uvicorn src.api.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ALLOWED_ORIGINS
+        value: "https://ai-study-assistant.vercel.app,http://localhost:3000,http://localhost:5173"
+      - key: PORT
+        value: "8000"
+

@@ -1,0 +1,45 @@
+{
+  "Music": {
+    "ratios": {
+      "topic": "Ratios",
+      "valid": true,
+      "analogy": "An octave is a 2:1 frequency ratio and a perfect fifth is 3:2.",
+      "worked_example": "A string at 220 Hz sounds an octave above at 440 Hz.",
+      "why_valid": "Pitch intervals are defined by frequency ratios.",
+      "limits": "Only covers ratio intuition, not ratio word problems."
+    },
+    "fractions": {
+      "topic": "Fractions",
+      "valid": true,
+      "analogy": "Musical time signatures and notes (whole, half, quarter, eighth) represent fractional divisions of a measure.",
+      "worked_example": "Two half notes or four quarter notes equal one whole note (1/2 + 1/2 = 1).",
+      "why_valid": "Rhythm and meter are exact fractional divisions.",
+      "limits": "Does not explain non-standard fraction arithmetic."
+    },
+    "limits": {
+      "topic": "Limits",
+      "valid": false,
+      "reason": "No sound analogy that is mathematically accurate."
+    }
+  },
+  "Gaming": {
+    "probability": {
+      "topic": "Probability",
+      "valid": true,
+      "analogy": "Loot drop rates and critical strike chances are calculated using event probabilities.",
+      "worked_example": "A 5% critical strike chance means an expected 1 in 20 hits.",
+      "why_valid": "Game mechanics directly employ RNG probability distributions.",
+      "limits": "Pseudo-random distribution algorithms may alter raw odds in games."
+    }
+  },
+  "Sports": {
+    "angles": {
+      "topic": "Angles",
+      "valid": true,
+      "analogy": "Passing and shooting trajectories in soccer or basketball depend directly on launch angle.",
+      "worked_example": "A 45-degree trajectory maximizes projectile range.",
+      "why_valid": "Kinematic vector physics defines flight paths.",
+      "limits": "Wind and spin deflect real ball flights."
+    }
+  }
+}
