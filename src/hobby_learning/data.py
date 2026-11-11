@@ -104,12 +104,7 @@ def clean_and_validate_data(
     attempt_num = pd.to_numeric(work_df["attempt_count"], errors="coerce")
     hint_num = pd.to_numeric(work_df["hint_count"], errors="coerce")
 
-    type_error_mask = (
-        order_id_num.isna()
-        | correct_num.isna()
-        | attempt_num.isna()
-        | hint_num.isna()
-    )
+    type_error_mask = order_id_num.isna() | correct_num.isna() | attempt_num.isna() | hint_num.isna()
 
     # Validate binary correct values
     invalid_correct_mask = ~correct_num.isin([0, 1])
@@ -184,7 +179,9 @@ def normalize_skills(
         return len(s.split("_"))
 
     norm_df.loc[has_skill, "canonical_skill_id"] = norm_df.loc[has_skill, "skill_id"].apply(extract_canonical)
-    norm_df.loc[has_skill, "n_skill_components"] = norm_df.loc[has_skill, "skill_id"].apply(count_components).astype(np.int64)
+    norm_df.loc[has_skill, "n_skill_components"] = (
+        norm_df.loc[has_skill, "skill_id"].apply(count_components).astype(np.int64)
+    )
 
     # Check canonical_skill_id to skill_name mapping
     named_mask = has_skill & norm_df["skill_name"].notna()

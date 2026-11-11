@@ -35,8 +35,7 @@ def download_stream(
 
         if limit_bytes is not None and existing_size >= limit_bytes:
             print(
-                f"[SKIP] {output_path} already has {existing_size:,} bytes "
-                f"(>= requested limit {limit_bytes:,} bytes)."
+                f"[SKIP] {output_path} already has {existing_size:,} bytes (>= requested limit {limit_bytes:,} bytes)."
             )
             return
 
@@ -61,21 +60,15 @@ def download_stream(
             print(f"\n[DOWNLOAD] Requesting: {url}")
 
         try:
-            with requests.get(
-                url, stream=True, headers=headers, timeout=timeout
-            ) as response:
+            with requests.get(url, stream=True, headers=headers, timeout=timeout) as response:
                 print(f"HTTP Status: {response.status_code}")
-                print(
-                    f"Content-Type: {response.headers.get('Content-Type', 'unknown')}"
-                )
+                print(f"Content-Type: {response.headers.get('Content-Type', 'unknown')}")
                 if response.status_code not in (200, 206):
                     response.raise_for_status()
 
                 # If server doesn't support Range (returns 200 instead of 206), start over
                 if existing_size > 0 and response.status_code == 200:
-                    print(
-                        "[WARN] Server did not accept Range header; restarting download."
-                    )
+                    print("[WARN] Server did not accept Range header; restarting download.")
                     existing_size = 0
                     file_mode = "wb"
 
@@ -119,9 +112,7 @@ def download_stream(
             )
             time.sleep(3)
 
-    raise RuntimeError(
-        f"Failed to complete download after {max_retries} retries for {url}"
-    )
+    raise RuntimeError(f"Failed to complete download after {max_retries} retries for {url}")
 
 
 def inspect_file(file_path: Path, count_newlines: bool = False) -> None:

@@ -16,7 +16,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 import sys
-from typing import Any, Dict, Iterator, Set, Tuple
+from typing import Any, Dict, Set
 
 
 def detect_file_format(sample_str: str) -> str:
@@ -122,7 +122,8 @@ def inspect_concept_problem(file_path: Path) -> Dict[str, Any]:
     column_names = (
         first_few_rows[0]
         if has_header
-        else ["concept_id (or name)", "problem_id"] + [f"extra_col_{i}" for i in range(2, max(col_counts.keys() or [2]))]
+        else ["concept_id (or name)", "problem_id"]
+        + [f"extra_col_{i}" for i in range(2, max(col_counts.keys() or [2]))]
     )
 
     return {
@@ -277,9 +278,7 @@ def stream_inspect_user_problem(
     total_is_correct_vals = sum(is_correct_distribution.values())
     binary_keys = {0, 1, 0.0, 1.0, "0", "1", True, False}
     valid_binary_count = sum(cnt for val, cnt in is_correct_distribution.items() if val in binary_keys)
-    is_correct_usable = (
-        total_is_correct_vals > 0 and (valid_binary_count / total_is_correct_vals) >= 0.99
-    )
+    is_correct_usable = total_is_correct_vals > 0 and (valid_binary_count / total_is_correct_vals) >= 0.99
 
     # Intersection analysis
     intersection_problems = unique_problems.intersection(concept_problem_ids)
@@ -327,7 +326,7 @@ def format_report(
         "1. FILE: concept-problem.txt",
         sub_border,
         f"  Path                  : {cp_stats['file_path']}",
-        f"  File Size             : {cp_stats['file_size_bytes']:,} bytes ({cp_stats['file_size_bytes'] / (1024*1024):.2f} MB)",
+        f"  File Size             : {cp_stats['file_size_bytes']:,} bytes ({cp_stats['file_size_bytes'] / (1024 * 1024):.2f} MB)",
         f"  Detected Delimiter    : {cp_stats['delimiter']} (tab)",
         f"  Has Header Row        : {cp_stats['has_header']}",
         f"  Reported Columns      : {', '.join(cp_stats['columns'])}",
@@ -338,46 +337,50 @@ def format_report(
         f"  Missing Problem IDs   : {cp_stats['missing_problem_count']:,}",
         f"  Unique Concepts       : {cp_stats['unique_concepts']:,}",
         f"  Unique Problem IDs    : {cp_stats['unique_problems']:,}",
-        f"  Sample Rows (First 3) :",
+        "  Sample Rows (First 3) :",
     ]
     for row in cp_stats["sample_rows"]:
         lines.append(f"    - {row}")
 
-    lines.extend([
-        "",
-        "2. FILE: user-problem-sample.jsonl",
-        sub_border,
-        f"  Path                  : {up_stats['file_path']}",
-        f"  File Size             : {up_stats['file_size_bytes']:,} bytes ({up_stats['file_size_bytes'] / (1024*1024):.2f} MB)",
-        f"  Detected JSON Format  : {up_stats['detected_format']}",
-        f"  Total Lines Read      : {up_stats['total_lines']:,}",
-        f"  Valid JSON Records    : {up_stats['valid_json_records']:,}",
-        f"  Malformed Records     : {up_stats['malformed_records']:,}",
-        "",
-        "  Available Fields & Null Counts:",
-    ])
+    lines.extend(
+        [
+            "",
+            "2. FILE: user-problem-sample.jsonl",
+            sub_border,
+            f"  Path                  : {up_stats['file_path']}",
+            f"  File Size             : {up_stats['file_size_bytes']:,} bytes ({up_stats['file_size_bytes'] / (1024 * 1024):.2f} MB)",
+            f"  Detected JSON Format  : {up_stats['detected_format']}",
+            f"  Total Lines Read      : {up_stats['total_lines']:,}",
+            f"  Valid JSON Records    : {up_stats['valid_json_records']:,}",
+            f"  Malformed Records     : {up_stats['malformed_records']:,}",
+            "",
+            "  Available Fields & Null Counts:",
+        ]
+    )
 
     for field, count in up_stats["field_counts"].items():
         nulls = up_stats["field_null_counts"].get(field, 0)
         pct = (nulls / count * 100) if count > 0 else 0
         lines.append(f"    * {field:<14} : present in {count:,} records | null in {nulls:,} ({pct:.1f}%)")
 
-    lines.extend([
-        "",
-        "3. FIELD USABILITY CHECKS",
-        sub_border,
-        f"  User ID Availability : {up_stats['unique_users_count']:,} unique users, {up_stats['missing_user_ids']:,} missing",
-        f"  Problem ID Coverage  : {up_stats['unique_problems_count']:,} unique problems, {up_stats['missing_problem_ids']:,} missing",
-        f"  is_correct Binary    : Usable = {up_stats['is_correct_usable']}",
-        f"    Distribution       : {up_stats['is_correct_distribution']}",
-        f"    Missing Values     : {up_stats['missing_is_correct']:,}",
-        f"  submit_time Parsing  : Successfully parsed = {up_stats['submit_time_parsed']:,} records",
-        f"    Failed Parsing     : {up_stats['submit_time_failed']:,} records",
-        f"    Missing Timestamps : {up_stats['missing_submit_time']:,} records",
-        "",
-        "4. PROBLEM ID INTERSECTION & OVERLAP",
-        sub_border,
-    ])
+    lines.extend(
+        [
+            "",
+            "3. FIELD USABILITY CHECKS",
+            sub_border,
+            f"  User ID Availability : {up_stats['unique_users_count']:,} unique users, {up_stats['missing_user_ids']:,} missing",
+            f"  Problem ID Coverage  : {up_stats['unique_problems_count']:,} unique problems, {up_stats['missing_problem_ids']:,} missing",
+            f"  is_correct Binary    : Usable = {up_stats['is_correct_usable']}",
+            f"    Distribution       : {up_stats['is_correct_distribution']}",
+            f"    Missing Values     : {up_stats['missing_is_correct']:,}",
+            f"  submit_time Parsing  : Successfully parsed = {up_stats['submit_time_parsed']:,} records",
+            f"    Failed Parsing     : {up_stats['submit_time_failed']:,} records",
+            f"    Missing Timestamps : {up_stats['missing_submit_time']:,} records",
+            "",
+            "4. PROBLEM ID INTERSECTION & OVERLAP",
+            sub_border,
+        ]
+    )
 
     total_valid = up_stats["valid_json_records"]
     matched = up_stats["matched_records"]
@@ -392,16 +395,18 @@ def format_report(
     up_coverage_pct = (inter_problems / total_up_problems * 100) if total_up_problems > 0 else 0
     cp_coverage_pct = (inter_problems / total_cp_problems * 100) if total_cp_problems > 0 else 0
 
-    lines.extend([
-        f"  Exercise Records Matched   : {matched:,} ({matched_pct:.2f}%)",
-        f"  Exercise Records Unmatched : {unmatched:,} ({unmatched_pct:.2f}%)",
-        f"  Unique Problems in Sample  : {total_up_problems:,}",
-        f"  Unique Problems in Concept : {total_cp_problems:,}",
-        f"  Unique Overlapping Problems: {inter_problems:,} ({up_coverage_pct:.2f}% of exercise problems, {cp_coverage_pct:.2f}% of concept problems)",
-        "",
-        "5. SUMMARY & DATA INTEGRITY VERDICT",
-        sub_border,
-    ])
+    lines.extend(
+        [
+            f"  Exercise Records Matched   : {matched:,} ({matched_pct:.2f}%)",
+            f"  Exercise Records Unmatched : {unmatched:,} ({unmatched_pct:.2f}%)",
+            f"  Unique Problems in Sample  : {total_up_problems:,}",
+            f"  Unique Problems in Concept : {total_cp_problems:,}",
+            f"  Unique Overlapping Problems: {inter_problems:,} ({up_coverage_pct:.2f}% of exercise problems, {cp_coverage_pct:.2f}% of concept problems)",
+            "",
+            "5. SUMMARY & DATA INTEGRITY VERDICT",
+            sub_border,
+        ]
+    )
 
     verdict_passed = (
         cp_stats["malformed_lines"] == 0
@@ -416,21 +421,21 @@ def format_report(
     else:
         lines.append("  [WARN] Dataset has issues noted above; verify handling before training.")
 
-    lines.extend([
-        f"  [NOTE] Malformed record rate in sample: {up_stats['malformed_records'] / max(up_stats['total_lines'], 1) * 100:.4f}%",
-        f"  [NOTE] Overlap: {inter_problems:,} problems have concept annotations in concept-problem.txt.",
-        border,
-        "",
-    ])
+    lines.extend(
+        [
+            f"  [NOTE] Malformed record rate in sample: {up_stats['malformed_records'] / max(up_stats['total_lines'], 1) * 100:.4f}%",
+            f"  [NOTE] Overlap: {inter_problems:,} problems have concept annotations in concept-problem.txt.",
+            border,
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 
 
 def main() -> int:
     """CLI entrypoint."""
-    parser = argparse.ArgumentParser(
-        description="Inspect and validate MOOCCubeX raw dataset files."
-    )
+    parser = argparse.ArgumentParser(description="Inspect and validate MOOCCubeX raw dataset files.")
     parser.add_argument(
         "--concept-problem",
         type=Path,
@@ -461,4 +466,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

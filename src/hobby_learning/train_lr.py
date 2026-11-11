@@ -82,10 +82,12 @@ def build_logistic_regression_pipeline(
         transformers=[
             (
                 "num",
-                Pipeline([
-                    ("imputer", SimpleImputer(strategy="median")),
-                    ("scaler", StandardScaler()),
-                ]),
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("scaler", StandardScaler()),
+                    ]
+                ),
                 feature_cols,
             )
         ],
@@ -235,78 +237,80 @@ def generate_comparison_reports(
     # Baseline predicts majority class constant prob 1.0, PR-AUC = positive prevalence
     baseline_pr_auc = baseline_metrics.get("pr_auc", baseline_prec)
 
-    comparison_df = pd.DataFrame([
-        {
-            "Metric": "Accuracy",
-            "Majority Baseline": f"{baseline_acc:.4f}",
-            "Logistic Regression": f"{lr_metrics['accuracy']:.4f}",
-            "Delta": f"{lr_metrics['accuracy'] - baseline_acc:+.4f}",
-        },
-        {
-            "Metric": "Precision",
-            "Majority Baseline": f"{baseline_prec:.4f}",
-            "Logistic Regression": f"{lr_metrics['precision']:.4f}",
-            "Delta": f"{lr_metrics['precision'] - baseline_prec:+.4f}",
-        },
-        {
-            "Metric": "Recall",
-            "Majority Baseline": f"{baseline_rec:.4f}",
-            "Logistic Regression": f"{lr_metrics['recall']:.4f}",
-            "Delta": f"{lr_metrics['recall'] - baseline_rec:+.4f}",
-        },
-        {
-            "Metric": "F1-score",
-            "Majority Baseline": f"{baseline_f1:.4f}",
-            "Logistic Regression": f"{lr_metrics['f1_score']:.4f}",
-            "Delta": f"{lr_metrics['f1_score'] - baseline_f1:+.4f}",
-        },
-        {
-            "Metric": "ROC-AUC",
-            "Majority Baseline": f"{baseline_roc_auc:.4f}",
-            "Logistic Regression": f"{lr_metrics['roc_auc']:.4f}",
-            "Delta": f"{lr_metrics['roc_auc'] - baseline_roc_auc:+.4f}",
-        },
-        {
-            "Metric": "PR-AUC",
-            "Majority Baseline": f"{baseline_pr_auc:.4f}",
-            "Logistic Regression": f"{lr_metrics['pr_auc']:.4f}",
-            "Delta": f"{lr_metrics['pr_auc'] - baseline_pr_auc:+.4f}",
-        },
-    ])
+    comparison_df = pd.DataFrame(
+        [
+            {
+                "Metric": "Accuracy",
+                "Majority Baseline": f"{baseline_acc:.4f}",
+                "Logistic Regression": f"{lr_metrics['accuracy']:.4f}",
+                "Delta": f"{lr_metrics['accuracy'] - baseline_acc:+.4f}",
+            },
+            {
+                "Metric": "Precision",
+                "Majority Baseline": f"{baseline_prec:.4f}",
+                "Logistic Regression": f"{lr_metrics['precision']:.4f}",
+                "Delta": f"{lr_metrics['precision'] - baseline_prec:+.4f}",
+            },
+            {
+                "Metric": "Recall",
+                "Majority Baseline": f"{baseline_rec:.4f}",
+                "Logistic Regression": f"{lr_metrics['recall']:.4f}",
+                "Delta": f"{lr_metrics['recall'] - baseline_rec:+.4f}",
+            },
+            {
+                "Metric": "F1-score",
+                "Majority Baseline": f"{baseline_f1:.4f}",
+                "Logistic Regression": f"{lr_metrics['f1_score']:.4f}",
+                "Delta": f"{lr_metrics['f1_score'] - baseline_f1:+.4f}",
+            },
+            {
+                "Metric": "ROC-AUC",
+                "Majority Baseline": f"{baseline_roc_auc:.4f}",
+                "Logistic Regression": f"{lr_metrics['roc_auc']:.4f}",
+                "Delta": f"{lr_metrics['roc_auc'] - baseline_roc_auc:+.4f}",
+            },
+            {
+                "Metric": "PR-AUC",
+                "Majority Baseline": f"{baseline_pr_auc:.4f}",
+                "Logistic Regression": f"{lr_metrics['pr_auc']:.4f}",
+                "Delta": f"{lr_metrics['pr_auc'] - baseline_pr_auc:+.4f}",
+            },
+        ]
+    )
 
     csv_path = rep_p / "model_comparison.csv"
     comparison_df.to_csv(csv_path, index=False)
 
     md_content = f"""# Model Comparison: Majority Baseline vs. Logistic Regression
 
-**Project**: AI-Powered Student Study Assistant MLOps  
-**Feature**: Feature A (Hobby Learning / Exercise Correctness Prediction)  
+**Project**: AI-Powered Student Study Assistant MLOps
+**Feature**: Feature A (Hobby Learning / Exercise Correctness Prediction)
 **Dataset**: ASSISTments 2009–2010 Corrected (Chronological Split: 80% Train, 20% Test)
 
 ## Metric Comparison
 
 | Metric | Majority Baseline | Logistic Regression | Delta |
 |---|---|---|---|
-| Accuracy | {baseline_acc:.4f} | {lr_metrics['accuracy']:.4f} | {lr_metrics['accuracy'] - baseline_acc:+.4f} |
-| Precision | {baseline_prec:.4f} | {lr_metrics['precision']:.4f} | {lr_metrics['precision'] - baseline_prec:+.4f} |
-| Recall | {baseline_rec:.4f} | {lr_metrics['recall']:.4f} | {lr_metrics['recall'] - baseline_rec:+.4f} |
-| F1-score | {baseline_f1:.4f} | {lr_metrics['f1_score']:.4f} | {lr_metrics['f1_score'] - baseline_f1:+.4f} |
-| ROC-AUC | {baseline_roc_auc:.4f} | {lr_metrics['roc_auc']:.4f} | {lr_metrics['roc_auc'] - baseline_roc_auc:+.4f} |
-| PR-AUC | {baseline_pr_auc:.4f} | {lr_metrics['pr_auc']:.4f} | {lr_metrics['pr_auc'] - baseline_pr_auc:+.4f} |
+| Accuracy | {baseline_acc:.4f} | {lr_metrics["accuracy"]:.4f} | {lr_metrics["accuracy"] - baseline_acc:+.4f} |
+| Precision | {baseline_prec:.4f} | {lr_metrics["precision"]:.4f} | {lr_metrics["precision"] - baseline_prec:+.4f} |
+| Recall | {baseline_rec:.4f} | {lr_metrics["recall"]:.4f} | {lr_metrics["recall"] - baseline_rec:+.4f} |
+| F1-score | {baseline_f1:.4f} | {lr_metrics["f1_score"]:.4f} | {lr_metrics["f1_score"] - baseline_f1:+.4f} |
+| ROC-AUC | {baseline_roc_auc:.4f} | {lr_metrics["roc_auc"]:.4f} | {lr_metrics["roc_auc"] - baseline_roc_auc:+.4f} |
+| PR-AUC | {baseline_pr_auc:.4f} | {lr_metrics["pr_auc"]:.4f} | {lr_metrics["pr_auc"] - baseline_pr_auc:+.4f} |
 
 ## Analysis of Results
 
 1. **Discriminative Capacity (ROC-AUC & PR-AUC)**:
    - The majority baseline has an uninformative ROC-AUC of `0.5000` because it predicts all instances as class 1 without rank discrimination.
-   - Logistic Regression achieves an ROC-AUC of `{lr_metrics['roc_auc']:.4f}` and a PR-AUC of `{lr_metrics['pr_auc']:.4f}` (+{lr_metrics['roc_auc'] - baseline_roc_auc:.4f} gain in ROC-AUC), proving meaningful discriminative learning on historical learner performance and skill features.
+   - Logistic Regression achieves an ROC-AUC of `{lr_metrics["roc_auc"]:.4f}` and a PR-AUC of `{lr_metrics["pr_auc"]:.4f}` (+{lr_metrics["roc_auc"] - baseline_roc_auc:.4f} gain in ROC-AUC), proving meaningful discriminative learning on historical learner performance and skill features.
 
 2. **Precision vs. Recall Trade-off**:
    - The majority baseline achieves trivial 100% recall (`1.0000`) by predicting positive for every problem, at the cost of `0%` specificity on incorrect answers.
-   - Logistic Regression improves precision to `{lr_metrics['precision']:.4f}` (+{lr_metrics['precision'] - baseline_prec:+.4f}) while maintaining high recall (`{lr_metrics['recall']:.4f}`), resulting in an improved F1-score of `{lr_metrics['f1_score']:.4f}`.
+   - Logistic Regression improves precision to `{lr_metrics["precision"]:.4f}` (+{lr_metrics["precision"] - baseline_prec:+.4f}) while maintaining high recall (`{lr_metrics["recall"]:.4f}`), resulting in an improved F1-score of `{lr_metrics["f1_score"]:.4f}`.
    - Crucially, Logistic Regression successfully identifies negative instances (`correct=0`), making it substantially more useful as a diagnostic student assistant than a naïve constant predictor.
 
 3. **Accuracy Context**:
-   - Accuracy increased from `{baseline_acc:.4f}` to `{lr_metrics['accuracy']:.4f}`. As emphasized in the evaluation criteria, higher accuracy alone does not justify model adoption; the true improvement lies in probability ranking and positive/negative class separation reflected in ROC-AUC and PR-AUC.
+   - Accuracy increased from `{baseline_acc:.4f}` to `{lr_metrics["accuracy"]:.4f}`. As emphasized in the evaluation criteria, higher accuracy alone does not justify model adoption; the true improvement lies in probability ranking and positive/negative class separation reflected in ROC-AUC and PR-AUC.
 """
 
     md_path = rep_p / "logistic_regression_results.md"
@@ -373,9 +377,7 @@ def train_and_track_logistic_regression(
     pipeline.fit(X_train, y_train)
 
     print("Evaluating LogisticRegression on chronological test set...")
-    metrics, cm, report_dict, report_text = evaluate_logistic_regression(
-        pipeline, X_test, y_test, threshold=threshold
-    )
+    metrics, cm, report_dict, report_text = evaluate_logistic_regression(pipeline, X_test, y_test, threshold=threshold)
 
     print("\n--- Logistic Regression Metrics ---")
     for k, v in metrics.items():
@@ -432,22 +434,24 @@ def train_and_track_logistic_regression(
 
     with mlflow.start_run(run_name=run_name) as run:
         # Log parameters
-        mlflow.log_params({
-            "model_name": "LogisticRegression",
-            "model_type": "linear_model",
-            "solver": solver,
-            "C": C,
-            "max_iter": max_iter,
-            "class_weight": str(class_weight),
-            "classification_threshold": threshold,
-            "target_column": TARGET_COLUMN,
-            "dataset_identifier": str(events_path),
-            "train_test_split_configuration": f"chronological_order_id_test_size_{test_size}",
-            "n_train_samples": len(X_train),
-            "n_test_samples": len(X_test),
-            "n_features": len(FEATURE_COLUMNS),
-            "preprocessing_configuration": "SimpleImputer(median) -> StandardScaler",
-        })
+        mlflow.log_params(
+            {
+                "model_name": "LogisticRegression",
+                "model_type": "linear_model",
+                "solver": solver,
+                "C": C,
+                "max_iter": max_iter,
+                "class_weight": str(class_weight),
+                "classification_threshold": threshold,
+                "target_column": TARGET_COLUMN,
+                "dataset_identifier": str(events_path),
+                "train_test_split_configuration": f"chronological_order_id_test_size_{test_size}",
+                "n_train_samples": len(X_train),
+                "n_test_samples": len(X_test),
+                "n_features": len(FEATURE_COLUMNS),
+                "preprocessing_configuration": "SimpleImputer(median) -> StandardScaler",
+            }
+        )
 
         # Log metrics
         for metric_name, metric_val in metrics.items():
@@ -461,12 +465,14 @@ def train_and_track_logistic_regression(
         mlflow.log_artifact(str(md_rep), artifact_path="evaluation_reports")
 
         # Set tags
-        mlflow.set_tags({
-            "project": "AI-Powered Student Study Assistant",
-            "feature": "hobby_learning",
-            "model": "logistic_regression",
-            "model_family": "linear",
-        })
+        mlflow.set_tags(
+            {
+                "project": "AI-Powered Student Study Assistant",
+                "feature": "hobby_learning",
+                "model": "logistic_regression",
+                "model_family": "linear",
+            }
+        )
 
         # Log fitted sklearn pipeline model with signature and input example
         input_example = X_train.iloc[:5]
