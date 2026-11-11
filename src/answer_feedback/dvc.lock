@@ -5,8 +5,8 @@ stages:
     deps:
     - path: data/answer_feedback/interim/answers_ocr.csv
       hash: md5
-      md5: e9a03c5a6ef78afa86950fc7f03ed897
-      size: 43341
+      md5: ed8c1dbdd29eb85d4634babb0a34cf28
+      size: 96371
     - path: data/answer_feedback/processed/marks_long.csv
       hash: md5
       md5: 9d609111ec6d605d2f79eeff8edae32a
@@ -22,15 +22,15 @@ stages:
     outs:
     - path: data/answer_feedback/processed/features.csv
       hash: md5
-      md5: 551f8ce58bdd9d68a81f49dbba8dc3b9
-      size: 29756
+      md5: 42b4ec7fa087606285544458a760abb8
+      size: 31279
   train:
     cmd: python -m src.answer_feedback.train
     deps:
     - path: data/answer_feedback/processed/features.csv
       hash: md5
-      md5: 551f8ce58bdd9d68a81f49dbba8dc3b9
-      size: 29756
+      md5: 42b4ec7fa087606285544458a760abb8
+      size: 31279
     - path: data/answer_feedback/processed/rubric.json
       hash: md5
       md5: 9560cbe37f4838fb173de0d3c1e0e417
@@ -42,7 +42,7 @@ stages:
     outs:
     - path: docs/model_comparison_results.csv
       hash: md5
-      md5: 8d8599d16e8d19990c1a5cd3bb68a92b
+      md5: fe702affc22b4e3f5ece4e86528418f1
       size: 398
     - path: docs/per_question_mae.csv
       hash: md5
@@ -50,7 +50,7 @@ stages:
       size: 356
     - path: models/answer_meta.json
       hash: md5
-      md5: f8f30b4c3910c2012e72ab75a33cd907
+      md5: e9bbe4e40625470d6b06a1ed80634c87
       size: 1442
     - path: models/answer_model.joblib
       hash: md5
