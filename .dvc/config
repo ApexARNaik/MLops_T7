@@ -1,0 +1,6 @@
+[core]
+    remote = storage_a
+['remote "storage_a"']
+    url = ../../dvc-store-A
+['remote "storage_b"']
+    url = ../../dvc-store-B
