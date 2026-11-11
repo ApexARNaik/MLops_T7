@@ -17,6 +17,7 @@ Pipeline steps:
 import os
 import sys
 import re
+import json
 import argparse
 import numpy as np
 import pandas as pd
@@ -143,90 +144,187 @@ def segment_short_answers(extracted_blocks_all_pages: list) -> dict:
     return segmented
 
 
+def _checkpoint_path(output_path: str) -> str:
+    """Returns the per-PDF checkpoint JSONL path alongside the output CSV."""
+    base = os.path.splitext(output_path)[0]
+    return base + "_checkpoint.jsonl"
+
+
+def _load_checkpoint(checkpoint_path: str) -> tuple[set, list]:
+    """
+    Loads already-processed student IDs and their records from the checkpoint file.
+    Returns (done_student_ids: set, records: list[dict]).
+    """
+    done_ids: set = set()
+    records: list = []
+    if not os.path.exists(checkpoint_path):
+        return done_ids, records
+    with open(checkpoint_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+                sid = entry.get("student_id", "")
+                if sid:
+                    done_ids.add(sid)
+                records.append(entry)
+            except json.JSONDecodeError:
+                pass  # skip malformed lines
+    return done_ids, records
+
+
+def _append_checkpoint(checkpoint_path: str, student_id: str, segmented: dict):
+    """
+    Appends one JSONL line per segmented answer for a student, plus a sentinel
+    line marking the student as done (even if 0 questions found).
+    """
+    os.makedirs(os.path.dirname(checkpoint_path) or ".", exist_ok=True)
+    with open(checkpoint_path, "a", encoding="utf-8") as f:
+        for qid, q_data in segmented.items():
+            row = {
+                "student_id": student_id,
+                "qid": qid,
+                "answer_text": q_data["answer_text"],
+                "ocr_conf": q_data["ocr_conf"],
+                "source": "easyocr",
+            }
+            f.write(json.dumps(row) + "\n")
+        # Sentinel so we know this student is fully done even with 0 answers
+        f.write(json.dumps({"student_id": student_id, "_done_sentinel": True}) + "\n")
+
+
 def process_all_student_pdfs(
     pdf_dir: str = RAW_STUDENT_PDF_DIR,
     output_path: str = OUTPUT_OCR_CSV,
     limit: int = None,
-    dpi: int = 200
+    dpi: int = 200,
+    resume: bool = True,
 ) -> pd.DataFrame:
     """
     Executes the full OCR pipeline across all student PDFs in Student_Pdf/.
+
+    Checkpoint/resume logic:
+    - After each PDF is processed, results are appended to a JSONL checkpoint
+      file (<output_stem>_checkpoint.jsonl) in the same interim directory.
+    - On re-launch, already-completed students are skipped automatically.
+    - The final CSV is (re-)written from the checkpoint at the end.
+    - Set resume=False (or --no-resume CLI flag) to force a full restart.
     """
     validate_input_path(pdf_dir)
     if not os.path.exists(pdf_dir):
         raise FileNotFoundError(f"Student_Pdf directory not found at {pdf_dir}")
 
-    # Lazy import of easyocr
     import easyocr
 
+    checkpoint_path = _checkpoint_path(output_path)
+    os.makedirs(INTERIM_DIR, exist_ok=True)
+
     print("=" * 80)
-    print("OCR PROCESSING PIPELINE (EASYOCR + PYMUPDF)")
+    print("OCR PROCESSING PIPELINE (EASYOCR + PYMUPDF) — RESUMABLE")
     print("=" * 80)
     print(f"Input Directory:  {pdf_dir}")
     print(f"Output CSV:       {output_path}")
+    print(f"Checkpoint file:  {checkpoint_path}")
     print(f"Rendering DPI:    {dpi}")
     print(f"Limiting to:      {limit if limit else 'All 50 PDFs'}")
+    print(f"Resume mode:      {'ON' if resume else 'OFF (full restart)'}")
+
+    # Load checkpoint
+    if resume:
+        done_ids, checkpoint_records = _load_checkpoint(checkpoint_path)
+        if done_ids:
+            print(f"\n[RESUME] Found checkpoint: {len(done_ids)} students already processed.")
+            print(f"         Skipping: {sorted(done_ids)}")
+        else:
+            print("\n[RESUME] No checkpoint found — starting fresh.")
+    else:
+        done_ids = set()
+        checkpoint_records = []
+        if os.path.exists(checkpoint_path):
+            os.remove(checkpoint_path)
+            print("[RESTART] Cleared existing checkpoint.")
 
     pdf_files = sorted([f for f in os.listdir(pdf_dir) if f.lower().endswith(".pdf")])
     if limit:
         pdf_files = pdf_files[:limit]
 
-    print(f"Found {len(pdf_files)} PDF files to process.")
+    # Filter to unprocessed
+    remaining = [f for f in pdf_files if os.path.splitext(f)[0] not in done_ids]
+    skipped = len(pdf_files) - len(remaining)
 
-    # Initialize EasyOCR Reader (English, CPU default for deterministic execution)
-    print("Initializing EasyOCR English model...")
-    reader = easyocr.Reader(["en"], gpu=False, verbose=False)
-    print("EasyOCR reader ready.\n")
+    print(f"\nTotal PDFs in scope:   {len(pdf_files)}")
+    print(f"Already processed:     {skipped}")
+    print(f"Remaining to process:  {len(remaining)}")
 
-    records = []
+    if not remaining:
+        print("\nAll PDFs already processed — rebuilding CSV from checkpoint.")
+    else:
+        print("Initializing EasyOCR English model...")
+        reader = easyocr.Reader(["en"], gpu=False, verbose=False)
+        print("EasyOCR reader ready.\n")
+
     total_pages_processed = 0
+    new_records_count = 0
 
-    for idx, pdf_file in enumerate(pdf_files, 1):
+    for idx, pdf_file in enumerate(remaining, 1):
         pdf_path = os.path.join(pdf_dir, pdf_file)
-        # Extract student ID (e.g. 'Student_1' from 'Student_1.pdf')
         student_id = os.path.splitext(pdf_file)[0]
-        print(f"[{idx}/{len(pdf_files)}] Processing {student_id} ({pdf_file})...", end="", flush=True)
+        global_idx = skipped + idx
+        print(
+            f"[{global_idx}/{len(pdf_files)}] Processing {student_id} ({pdf_file})...",
+            end="", flush=True
+        )
 
-        pages = render_pdf_to_images(pdf_path, dpi=dpi)
-        total_pages_processed += len(pages)
+        try:
+            pages = render_pdf_to_images(pdf_path, dpi=dpi)
+            total_pages_processed += len(pages)
 
-        # Extract OCR tokens across all pages
-        all_blocks = []
-        for page_num, img_np in pages:
-            page_blocks = extract_page_ocr(reader, img_np)
-            all_blocks.extend(page_blocks)
+            all_blocks = []
+            for page_num, img_np in pages:
+                page_blocks = extract_page_ocr(reader, img_np)
+                all_blocks.extend(page_blocks)
 
-        # Segment into short-answer questions Q21-Q35
-        segmented = segment_short_answers(all_blocks)
-        print(f" -> Found {len(segmented)}/15 questions.")
+            segmented = segment_short_answers(all_blocks)
+            print(f" -> Found {len(segmented)}/15 questions.")
 
-        for qid, q_data in segmented.items():
-            records.append({
-                "student_id": student_id,
-                "qid": qid,
-                "answer_text": q_data["answer_text"],
-                "ocr_conf": q_data["ocr_conf"],
-                "source": "easyocr"
-            })
+        except Exception as e:
+            print(f" -> ERROR: {e}. Skipping student.")
+            # Mark as done with zero answers so we don't retry endlessly
+            segmented = {}
 
-    # Create interim DataFrame
-    df_ocr = pd.DataFrame(records)
+        # Persist to checkpoint immediately
+        _append_checkpoint(checkpoint_path, student_id, segmented)
+        new_records_count += len(segmented)
+
+    # --- Rebuild final CSV from full checkpoint ---
+    _, all_records = _load_checkpoint(checkpoint_path)
+    # Filter out sentinel-only rows
+    data_rows = [r for r in all_records if "_done_sentinel" not in r]
+
+    df_ocr = pd.DataFrame(data_rows)
     if df_ocr.empty:
         df_ocr = pd.DataFrame(columns=["student_id", "qid", "answer_text", "ocr_conf", "source"])
+    else:
+        df_ocr = df_ocr[["student_id", "qid", "answer_text", "ocr_conf", "source"]]
 
-    # Ensure output directory exists and save CSV
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df_ocr.to_csv(output_path, index=False)
+
     print("\n" + "=" * 80)
     print("OCR PIPELINE EXECUTION SUMMARY")
     print("=" * 80)
-    print(f"Total PDFs processed:          {len(pdf_files)}")
+    total_processed = skipped + len(remaining)
+    print(f"Total PDFs processed:          {total_processed}")
+    print(f"  — Previously (checkpoint):   {skipped}")
+    print(f"  — Processed this run:        {len(remaining)}")
     print(f"Total PDF pages rendered:      {total_pages_processed}")
-    print(f"Total answers segmented:       {len(df_ocr)}")
+    print(f"Total answers in CSV:          {len(df_ocr)}")
+    print(f"New answers this run:          {new_records_count}")
     print(f"Saved CSV to:                  {output_path}")
+    print(f"Checkpoint kept at:            {checkpoint_path}")
 
-    # Coverage and Quality Analysis
-    calculate_ocr_metrics(df_ocr, len(pdf_files))
+    calculate_ocr_metrics(df_ocr, total_processed)
 
     return df_ocr
 
@@ -282,10 +380,16 @@ def parse_args():
     parser.add_argument("--limit", type=int, default=None, help="Limit to first N students (e.g. --limit 5 for fast test)")
     parser.add_argument("--dpi", type=int, default=200, help="DPI for PDF rendering (default 200)")
     parser.add_argument("--output", type=str, default=OUTPUT_OCR_CSV, help="Output CSV path")
+    parser.add_argument("--no-resume", action="store_true", help="Force full restart, ignoring any existing checkpoint")
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    process_all_student_pdfs(limit=args.limit, dpi=args.dpi, output_path=args.output)
+    process_all_student_pdfs(
+        limit=args.limit,
+        dpi=args.dpi,
+        output_path=args.output,
+        resume=not args.no_resume,
+    )
 
