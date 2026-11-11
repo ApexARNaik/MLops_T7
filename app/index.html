@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Powered Student Study Assistant - MLOps Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header Component Mount Point -->
+  <div id="header-mount"></div>
+
+  <!-- Navigation Tabs Mount Point -->
+  <div class="tabs-wrapper">
+    <div class="container" id="tabs-mount"></div>
+  </div>
+
+  <!-- Main Content Panels -->
+  <main class="container">
+    <!-- Panel 1: Hobby Recommender -->
+    <div id="tab-hobby-learning" class="tab-panel active">
+      <div id="hobby-recommender-mount"></div>
+    </div>
+
+    <!-- Panel 2: Answer Feedback -->
+    <div id="tab-answer-feedback" class="tab-panel">
+      <div id="answer-evaluator-mount"></div>
+    </div>
+
+    <!-- Panel 3: Teacher Review -->
+    <div id="tab-teacher-review" class="tab-panel">
+      <div id="teacher-review-mount"></div>
+    </div>
+
+    <!-- Panel 4: Model Inspector -->
+    <div id="tab-model-inspector" class="tab-panel">
+      <div id="model-inspector-mount"></div>
+    </div>
+  </main>
+
+  <!-- Application Footer -->
+  <footer class="app-footer container">
+    <p>AI-Powered Student Study Assistant • MLOps Sprint Project</p>
+    <p style="margin-top: 0.25rem;">Deterministic Rubric Feedback &amp; Grouped CV Evaluation • Strictly Offline &amp; Privacy-Compliant</p>
+  </footer>
+
+  <!-- App Entry Script -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+
