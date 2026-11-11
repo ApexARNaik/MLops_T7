@@ -30,12 +30,9 @@ class FeedbackRequest(BaseModel):
 
     @field_validator("ocr_confidence")
     @classmethod
-    def validate_ocr_confidence(
-        cls, values: dict[str, float] | None
-    ) -> dict[str, float] | None:
+    def validate_ocr_confidence(cls, values: dict[str, float] | None) -> dict[str, float] | None:
         if values is not None and any(
-            not math.isfinite(confidence) or not 0 <= confidence <= 1
-            for confidence in values.values()
+            not math.isfinite(confidence) or not 0 <= confidence <= 1 for confidence in values.values()
         ):
             raise ValueError("OCR confidence values must be between 0 and 1.")
         return values
@@ -52,10 +49,7 @@ class ApproveRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_marks(self) -> "ApproveRequest":
-        if not all(
-            math.isfinite(mark)
-            for mark in (self.estimated_mark, self.approved_mark, self.max_mark)
-        ):
+        if not all(math.isfinite(mark) for mark in (self.estimated_mark, self.approved_mark, self.max_mark)):
             raise ValueError("Marks must be finite numbers.")
         if self.estimated_mark > self.max_mark:
             raise ValueError("estimated_mark cannot exceed max_mark.")
