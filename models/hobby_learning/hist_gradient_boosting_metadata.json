@@ -1,0 +1,46 @@
+{
+  "model_name": "HistGradientBoostingClassifier",
+  "model_type": "ensemble_gradient_boosting",
+  "learning_rate": 0.1,
+  "max_iter": 200,
+  "max_leaf_nodes": 31,
+  "max_depth": null,
+  "min_samples_leaf": 20,
+  "l2_regularization": 1.0,
+  "class_weight": "None",
+  "random_state": 42,
+  "classification_threshold": 0.5,
+  "target_column": "correct",
+  "dataset_identifier": "data\\hobby_learning\\processed\\events.csv",
+  "train_test_split_configuration": "chronological_order_id_test_size_0.2",
+  "n_train_samples": 277488,
+  "n_test_samples": 69372,
+  "n_features": 7,
+  "features": [
+    "user_prev_count",
+    "user_prev_accuracy",
+    "user_prev_attempts_mean",
+    "user_prev_hints_mean",
+    "user_skill_prev_count",
+    "user_skill_prev_accuracy",
+    "n_skill_components"
+  ],
+  "preprocessing_configuration": "SimpleImputer(strategy='median')",
+  "feature_importances": {
+    "user_skill_prev_accuracy": 0.08564118709116922,
+    "user_prev_accuracy": 0.01874644756238626,
+    "user_prev_hints_mean": 0.013436731669607727,
+    "user_prev_count": 0.004199234984287203,
+    "user_prev_attempts_mean": 0.003324396491449266,
+    "n_skill_components": 0.0027019961837002173,
+    "user_skill_prev_count": 0.0016924153027110035
+  },
+  "metrics": {
+    "accuracy": 0.7110361529147207,
+    "precision": 0.7240156595963162,
+    "recall": 0.9406920992286846,
+    "f1_score": 0.8182527018205557,
+    "roc_auc": 0.6561556925403705,
+    "pr_auc": 0.790229596250426
+  }
+}
