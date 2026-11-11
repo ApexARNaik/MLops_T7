@@ -1,4 +1,4 @@
 model_name,MAE,RMSE,Exact_Acc,Within_0.5_Acc,Within_1.0_Acc,run_id
-baseline_question_mean,0.5242 ± 0.0347,0.6549 ± 0.0424,20.0%,83.3%,92.6%,4325d0e5548a493c965402de9ec9eabd
-baseline_tfidf_ridge,0.5417 ± 0.0417,0.6632 ± 0.0504,16.9%,82.9%,92.6%,c4fb8ba114fb4f1fba2ad4b5663557a3
-candidate_gradient_boosting,0.5425 ± 0.0327,0.6660 ± 0.0410,17.1%,82.7%,92.4%,6a8ec3d6f2054c3dba2e12466e80dc9a
+baseline_question_mean,0.5374 ± 0.0448,0.6652 ± 0.0587,18.7%,81.8%,93.1%,a0bca89df6fd423fa95db11b09817b88
+baseline_tfidf_ridge,0.5365 ± 0.0461,0.6613 ± 0.0633,18.0%,82.7%,93.1%,04862a78e8864f7589bff9b9d25eacb0
+candidate_gradient_boosting,0.5365 ± 0.0461,0.6613 ± 0.0633,18.0%,82.7%,93.1%,ec5f65b686394dd8935c12fa83496d3c

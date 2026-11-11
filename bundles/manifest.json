@@ -1,0 +1,108 @@
+{
+  "bundle_name": "ai-student-study-assistant-production-bundle",
+  "bundle_version": "1.0.0",
+  "created_at_utc": "2026-11-11T09:05:39.434492+00:00",
+  "environment": {
+    "python": "3.11",
+    "frameworks": [
+      "fastapi",
+      "scikit-learn",
+      "joblib",
+      "pandas",
+      "numpy"
+    ]
+  },
+  "models": {
+    "answer_feedback": {
+      "artifact": "answer_model.joblib",
+      "metadata": "answer_meta.json",
+      "model_name": "baseline_tfidf_ridge",
+      "model_version": "1.0.0"
+    },
+    "hobby_learning": {
+      "artifact": "learning_model.joblib",
+      "metadata": "learning_meta.json",
+      "model_name": "study-assistant-learning-model",
+      "model_version": "1.0.0"
+    }
+  },
+  "artifacts": [
+    {
+      "filename": "answer_model.joblib",
+      "relative_path": "models/answer_model.joblib",
+      "description": "Trained champion answer-feedback scoring model (Ridge/HistGradientBoosting)",
+      "size_bytes": 158,
+      "sha256": "cf4744762543452fb0b2bddade029e4e84be40d6245359ec8d0b0b7b3fc75b38"
+    },
+    {
+      "filename": "answer_meta.json",
+      "relative_path": "models/answer_meta.json",
+      "description": "Answer model metadata, lineage, metrics and rubric version",
+      "size_bytes": 1454,
+      "sha256": "27fcd6313ba4ddb0c2f3555f9b857f6cf0ee9d91a877bcb2af8219222d5048fe"
+    },
+    {
+      "filename": "learning_model.joblib",
+      "relative_path": "models/learning_model.joblib",
+      "description": "Trained champion hobby-learning prediction model",
+      "size_bytes": 1889,
+      "sha256": "65683b43f42e62c0cab4de332e5af8954c3104ea375afe3e914a005517f3a44f"
+    },
+    {
+      "filename": "learning_meta.json",
+      "relative_path": "models/learning_meta.json",
+      "description": "Learning model metadata, features, metrics and lineage",
+      "size_bytes": 612,
+      "sha256": "4812f3d718b521fd08299d6cf319d254c607bc2c3fefb98f8dc21620da68eb8a"
+    },
+    {
+      "filename": "hobby_map.json",
+      "relative_path": "models/hobby_map.json",
+      "description": "Curated analogies mapping math concepts to hobbies (Music, Gaming, Sports)",
+      "size_bytes": 1886,
+      "sha256": "6aab4804614f6cead9d2ca6dc7928864994297e587ade37ad21063a8f946abf9"
+    },
+    {
+      "filename": "problem_stats.csv",
+      "relative_path": "models/problem_stats.csv",
+      "description": "Precomputed problem pass rates for cold-start and difficulty lookup",
+      "size_bytes": 75,
+      "sha256": "d8c6acf706eee611e35dbec53753cfead96403fa54b407962a5da64b525e5db8"
+    },
+    {
+      "filename": "concept_stats.csv",
+      "relative_path": "models/concept_stats.csv",
+      "description": "Precomputed concept accuracy rates for weak-concept identification",
+      "size_bytes": 102,
+      "sha256": "25a899a2fe4ae8d231505039319636ca2235119d07115a803b7ec04b74082bed"
+    },
+    {
+      "filename": "demo_learners.csv",
+      "relative_path": "models/demo_learners.csv",
+      "description": "Historical learner statistics (u_prev_n, u_prev_rate)",
+      "size_bytes": 77,
+      "sha256": "a6918657405d1c9727137a63752b77a5138aa84ec7abfee3f074b0805e421126"
+    },
+    {
+      "filename": "rubric.json",
+      "relative_path": "data/rubric.json",
+      "description": "Full 15-question exam rubric, point breakdown and reference answers",
+      "size_bytes": 11519,
+      "sha256": "2790d7fbb8409bb71df0abba491896fd917b9b84ae7a46deabbfaff9e779521b"
+    },
+    {
+      "filename": "model_comparison_results.csv",
+      "relative_path": "docs/model_comparison_results.csv",
+      "description": "5-fold CV comparison metrics across baseline and candidate models",
+      "size_bytes": 398,
+      "sha256": "3654cca9e61fa9eee1b8bc7fc86d941b155d7ed835b8bb8ab78ae4f160720bf3"
+    },
+    {
+      "filename": "per_question_mae.csv",
+      "relative_path": "docs/per_question_mae.csv",
+      "description": "Per-question MAE and performance breakdown table",
+      "size_bytes": 355,
+      "sha256": "d5e2881e42347573acca456127bee3d115e2e6381bc8e749fdfa1ed37b2bd380"
+    }
+  ]
+}

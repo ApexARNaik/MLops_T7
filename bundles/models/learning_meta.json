@@ -1,0 +1,25 @@
+{
+  "model_name": "study-assistant-learning-model",
+  "model_version": "1.0.0",
+  "mlflow_run_id": "fast_run_learning_001",
+  "git_commit": "e1ebc23",
+  "features": [
+    "u_prev_n",
+    "u_prev_rate",
+    "u_prev_attempts_mean",
+    "gap_hours",
+    "n_concepts",
+    "p_rate",
+    "c_rate"
+  ],
+  "metrics": {
+    "f1": 0.833,
+    "precision": 0.857,
+    "recall": 0.81,
+    "roc_auc": 0.875
+  },
+  "global_rate": 0.675,
+  "attempts_median": 1.2,
+  "trained_on": "MOOCCubeX user-problem slice",
+  "limitations": "Slice not random; Chinese MOOC population; probability is an estimate."
+}
