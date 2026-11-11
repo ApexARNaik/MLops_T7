@@ -1,0 +1,4 @@
+model_name,MAE,RMSE,Exact_Acc,Within_0.5_Acc,Within_1.0_Acc,run_id
+baseline_question_mean,0.5242 ± 0.0347,0.6549 ± 0.0424,20.0%,83.3%,92.6%,f86c4da5ebe24657a87364b55c98d535
+baseline_tfidf_ridge,0.5389 ± 0.0301,0.6574 ± 0.0394,16.4%,83.8%,92.6%,8c6d983fe477495e945201aa73a6e671
+candidate_gradient_boosting,0.5362 ± 0.0280,0.6557 ± 0.0397,16.5%,84.3%,92.4%,00e04f2fbeff48ef8c10bd35ce91fd6b

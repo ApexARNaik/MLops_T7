@@ -1,0 +1,37 @@
+{
+  "model_name": "baseline_question_mean",
+  "model_version": "1.0.0",
+  "mlflow_run_id": "f86c4da5ebe24657a87364b55c98d535",
+  "git_commit": "609ea0d7287b00c736ee645370b5bc282ef3ef0e",
+  "features": [
+    "qid",
+    "question_mean_mark"
+  ],
+  "metrics": {
+    "cv_5fold": {
+      "mean_mae": 0.52418,
+      "mean_rmse": 0.6549200000000001,
+      "mean_exact_accuracy": 0.2001,
+      "mean_within_0.5_accuracy": 0.8326399999999999,
+      "mean_within_1.0_accuracy": 0.9259000000000001,
+      "std_mae": 0.03466319373629614,
+      "std_rmse": 0.04235141083836525,
+      "std_exact_accuracy": 0.056711418603311275,
+      "std_within_0.5_accuracy": 0.030347784103621135,
+      "std_within_1.0_accuracy": 0.020650786909946064
+    }
+  },
+  "trained_on": {
+    "dataset": "Mendeley Student Examination Papers (Anonymized)",
+    "n_students": 50,
+    "n_records": 568,
+    "short_answer_questions": "Q21-Q35"
+  },
+  "rubric_version": "2790d7fbb8409bb71df0abba491896fd917b9b84ae7a46deabbfaff9e779521b",
+  "limitations": [
+    "Trained on question-level mean marks and interim OCR segmented student answers.",
+    "Handwritten OCR text coverage is currently partial in interim pipeline.",
+    "If OCR text is missing, predictions gracefully fall back to question_mean_mark without assigning artificial zero marks.",
+    "Evaluated with 5-fold GroupKFold by student_id to prevent intra-student data leakage."
+  ]
+}
