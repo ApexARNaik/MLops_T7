@@ -361,7 +361,16 @@ def train_and_compare_models():
 
     # Export selected model to models/answer_model.joblib
     os.makedirs(MODELS_DIR, exist_ok=True)
-    joblib.dump(best_info["model_obj"], MODEL_EXPORT_PATH)
+    import src.answer_feedback.train as train_mod
+    model_to_save = best_info["model_obj"]
+    # Recreate as clean instance of the module's class to avoid __main__ pickling issues
+    clean_model = train_mod.BaselineQuestionMeanModel(
+        step=getattr(model_to_save, "step", 0.5),
+        max_mark=getattr(model_to_save, "max_mark", 2.0)
+    )
+    clean_model.question_means_ = dict(getattr(model_to_save, "question_means_", {}))
+    clean_model.global_mean_ = float(getattr(model_to_save, "global_mean_", 1.0))
+    joblib.dump(clean_model, MODEL_EXPORT_PATH)
     print(f"Exported model binary to: {MODEL_EXPORT_PATH}")
 
     # Document limitations honestly

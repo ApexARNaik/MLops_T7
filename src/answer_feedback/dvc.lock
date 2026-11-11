@@ -1,0 +1,58 @@
+schema: '2.0'
+stages:
+  features:
+    cmd: python -m src.answer_feedback.features
+    deps:
+    - path: data/answer_feedback/interim/answers_ocr.csv
+      hash: md5
+      md5: e9a03c5a6ef78afa86950fc7f03ed897
+      size: 43341
+    - path: data/answer_feedback/processed/marks_long.csv
+      hash: md5
+      md5: 9d609111ec6d605d2f79eeff8edae32a
+      size: 11275
+    - path: data/answer_feedback/processed/rubric.json
+      hash: md5
+      md5: 9560cbe37f4838fb173de0d3c1e0e417
+      size: 11519
+    - path: src/answer_feedback/features.py
+      hash: md5
+      md5: 027c55f00df964416e3df1b25ebd9b10
+      size: 13672
+    outs:
+    - path: data/answer_feedback/processed/features.csv
+      hash: md5
+      md5: 551f8ce58bdd9d68a81f49dbba8dc3b9
+      size: 29756
+  train:
+    cmd: python -m src.answer_feedback.train
+    deps:
+    - path: data/answer_feedback/processed/features.csv
+      hash: md5
+      md5: 551f8ce58bdd9d68a81f49dbba8dc3b9
+      size: 29756
+    - path: data/answer_feedback/processed/rubric.json
+      hash: md5
+      md5: 9560cbe37f4838fb173de0d3c1e0e417
+      size: 11519
+    - path: src/answer_feedback/train.py
+      hash: md5
+      md5: 7647adedd506e7f28f651851fe016f06
+      size: 19354
+    outs:
+    - path: docs/model_comparison_results.csv
+      hash: md5
+      md5: 8d8599d16e8d19990c1a5cd3bb68a92b
+      size: 398
+    - path: docs/per_question_mae.csv
+      hash: md5
+      md5: 588e098c521839ed306cf2ab6045438b
+      size: 356
+    - path: models/answer_meta.json
+      hash: md5
+      md5: f8f30b4c3910c2012e72ab75a33cd907
+      size: 1442
+    - path: models/answer_model.joblib
+      hash: md5
+      md5: fb6510b854538464a59f0861d3c477a6
+      size: 385

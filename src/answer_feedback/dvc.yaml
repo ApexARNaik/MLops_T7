@@ -1,0 +1,28 @@
+stages:
+  features:
+    cmd: python -m src.answer_feedback.features
+    wdir: ../..
+    deps:
+      - src/answer_feedback/features.py
+      - data/answer_feedback/interim/answers_ocr.csv
+      - data/answer_feedback/processed/rubric.json
+      - data/answer_feedback/processed/marks_long.csv
+    outs:
+      - data/answer_feedback/processed/features.csv
+
+  train:
+    cmd: python -m src.answer_feedback.train
+    wdir: ../..
+    deps:
+      - src/answer_feedback/train.py
+      - data/answer_feedback/processed/features.csv
+      - data/answer_feedback/processed/rubric.json
+    outs:
+      - models/answer_model.joblib:
+          cache: false
+      - models/answer_meta.json:
+          cache: false
+      - docs/model_comparison_results.csv:
+          cache: false
+      - docs/per_question_mae.csv:
+          cache: false
