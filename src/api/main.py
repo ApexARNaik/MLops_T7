@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import re
 import uuid
 from pathlib import Path
 from types import ModuleType
@@ -7,12 +9,12 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.answer_feedback import predict as feedback
 from src.common.schemas import ApproveRequest, FeedbackRequest, HobbyRequest
 from src.hobby_learning import predict as hobby
-
 
 MODEL_DIR = Path("models")
 MODEL_ARTIFACTS = {
@@ -34,6 +36,23 @@ app = FastAPI(
         "Provides hobby-based learning recommendations and teacher-reviewed "
         "answer feedback. Predictions are estimates, not final grades."
     ),
+)
+
+# Environment-based CORS configuration
+# Defaults to standard local development URLs if ALLOWED_ORIGINS is not set.
+# In production, set ALLOWED_ORIGINS to the Vercel frontend domain(s).
+raw_allowed_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173",
+)
+allowed_origins = [origin.strip() for origin in re.split(r"[,;\s]+", raw_allowed_origins) if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 
@@ -59,9 +78,7 @@ async def handle_http_exception(request: Request, exc: HTTPException) -> JSONRes
 
 
 @app.exception_handler(RequestValidationError)
-async def handle_validation_error(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     safe_errors = [
         {
             "loc": [str(part) for part in error["loc"]],
@@ -127,9 +144,7 @@ def _prediction_envelope(
         returned_data = result["data"]
     else:
         returned_data = {
-            key: value
-            for key, value in result.items()
-            if key not in {"model_name", "model_version", "warnings"}
+            key: value for key, value in result.items() if key not in {"model_name", "model_version", "warnings"}
         }
     if not isinstance(returned_data, dict):
         raise HTTPException(
@@ -227,9 +242,7 @@ def _flag_uncertain_answer_results(
     for key in ("results", "answers"):
         value = data.get(key)
         if isinstance(value, list):
-            question_results.extend(
-                entry for entry in value if isinstance(entry, dict)
-            )
+            question_results.extend(entry for entry in value if isinstance(entry, dict))
     for key, value in data.items():
         if key in answers and isinstance(value, dict):
             value.setdefault("qid", key)
@@ -240,9 +253,7 @@ def _flag_uncertain_answer_results(
             continue
         answer = answers.get(qid)
         confidence = confidences.get(qid) if confidences is not None else None
-        if answer is None or len(answer.split()) < 3 or (
-            confidence is not None and confidence < 0.6
-        ):
+        if answer is None or len(answer.split()) < 3 or (confidence is not None and confidence < 0.6):
             result["human_review_required"] = True
 
 

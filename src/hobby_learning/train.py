@@ -7,7 +7,6 @@ Owner: Teammate AT
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -67,8 +66,7 @@ def load_processed_data(file_path: Path | str = DEFAULT_EVENTS_PATH) -> pd.DataF
     path = Path(file_path)
     if not path.is_file():
         raise FileNotFoundError(
-            f"Processed events file not found at: {path}. "
-            f"Please run `python -m src.hobby_learning.data` first."
+            f"Processed events file not found at: {path}. Please run `python -m src.hobby_learning.data` first."
         )
     return pd.read_csv(path)
 
@@ -321,16 +319,18 @@ def train_and_track(
 
     with mlflow.start_run(run_name=run_name) as run:
         # Log parameters
-        mlflow.log_params({
-            "model_name": "DummyClassifier",
-            "model_strategy": "most_frequent",
-            "target_column": TARGET_COLUMN,
-            "training_dataset": str(events_path),
-            "train_test_split_configuration": f"chronological_split_{test_size}",
-            "n_train_samples": len(X_train),
-            "n_test_samples": len(X_test),
-            "n_features": len(FEATURE_COLUMNS),
-        })
+        mlflow.log_params(
+            {
+                "model_name": "DummyClassifier",
+                "model_strategy": "most_frequent",
+                "target_column": TARGET_COLUMN,
+                "training_dataset": str(events_path),
+                "train_test_split_configuration": f"chronological_split_{test_size}",
+                "n_train_samples": len(X_train),
+                "n_test_samples": len(X_test),
+                "n_features": len(FEATURE_COLUMNS),
+            }
+        )
 
         # Log metrics
         for metric_name, metric_val in metrics.items():
@@ -341,12 +341,14 @@ def train_and_track(
             mlflow.log_artifact(str(fpath), artifact_path="baseline_artifacts")
 
         # Set tags
-        mlflow.set_tags({
-            "project": "AI-Powered Student Study Assistant MLOps",
-            "feature": "Feature A: Hobby Learning",
-            "model_type": "baseline",
-            "model_family": "heuristic",
-        })
+        mlflow.set_tags(
+            {
+                "project": "AI-Powered Student Study Assistant MLOps",
+                "feature": "Feature A: Hobby Learning",
+                "model_type": "baseline",
+                "model_family": "heuristic",
+            }
+        )
 
         run_id = run.info.run_id
         print(f"MLflow Run completed successfully! Run ID: {run_id}")
@@ -362,4 +364,3 @@ def train_and_track(
 
 if __name__ == "__main__":
     train_and_track()
-

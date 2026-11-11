@@ -199,9 +199,7 @@ def compute_feature_importances(
         scoring="roc_auc",
     )
 
-    importances = {
-        feat: float(score) for feat, score in zip(feature_cols, res.importances_mean)
-    }
+    importances = {feat: float(score) for feat, score in zip(feature_cols, res.importances_mean)}
     # Sort descending
     return dict(sorted(importances.items(), key=lambda item: item[1], reverse=True))
 
@@ -307,86 +305,88 @@ def generate_three_model_comparison_reports(
     lr_roc = lr_metrics.get("roc_auc", 0.6590)
     lr_pr = lr_metrics.get("pr_auc", 0.7907)
 
-    comparison_df = pd.DataFrame([
-        {
-            "Metric": "Accuracy",
-            "Majority Baseline": f"{b_acc:.4f}",
-            "Logistic Regression": f"{lr_acc:.4f}",
-            "HistGradientBoosting": f"{hgb_metrics['accuracy']:.4f}",
-        },
-        {
-            "Metric": "Precision",
-            "Majority Baseline": f"{b_prec:.4f}",
-            "Logistic Regression": f"{lr_prec:.4f}",
-            "HistGradientBoosting": f"{hgb_metrics['precision']:.4f}",
-        },
-        {
-            "Metric": "Recall",
-            "Majority Baseline": f"{b_rec:.4f}",
-            "Logistic Regression": f"{lr_rec:.4f}",
-            "HistGradientBoosting": f"{hgb_metrics['recall']:.4f}",
-        },
-        {
-            "Metric": "F1-score",
-            "Majority Baseline": f"{b_f1:.4f}",
-            "Logistic Regression": f"{lr_f1:.4f}",
-            "HistGradientBoosting": f"{hgb_metrics['f1_score']:.4f}",
-        },
-        {
-            "Metric": "ROC-AUC",
-            "Majority Baseline": f"{b_roc:.4f}",
-            "Logistic Regression": f"{lr_roc:.4f}",
-            "HistGradientBoosting": f"{hgb_metrics['roc_auc']:.4f}",
-        },
-        {
-            "Metric": "PR-AUC",
-            "Majority Baseline": f"{b_pr:.4f}",
-            "Logistic Regression": f"{lr_pr:.4f}",
-            "HistGradientBoosting": f"{hgb_metrics['pr_auc']:.4f}",
-        },
-    ])
+    comparison_df = pd.DataFrame(
+        [
+            {
+                "Metric": "Accuracy",
+                "Majority Baseline": f"{b_acc:.4f}",
+                "Logistic Regression": f"{lr_acc:.4f}",
+                "HistGradientBoosting": f"{hgb_metrics['accuracy']:.4f}",
+            },
+            {
+                "Metric": "Precision",
+                "Majority Baseline": f"{b_prec:.4f}",
+                "Logistic Regression": f"{lr_prec:.4f}",
+                "HistGradientBoosting": f"{hgb_metrics['precision']:.4f}",
+            },
+            {
+                "Metric": "Recall",
+                "Majority Baseline": f"{b_rec:.4f}",
+                "Logistic Regression": f"{lr_rec:.4f}",
+                "HistGradientBoosting": f"{hgb_metrics['recall']:.4f}",
+            },
+            {
+                "Metric": "F1-score",
+                "Majority Baseline": f"{b_f1:.4f}",
+                "Logistic Regression": f"{lr_f1:.4f}",
+                "HistGradientBoosting": f"{hgb_metrics['f1_score']:.4f}",
+            },
+            {
+                "Metric": "ROC-AUC",
+                "Majority Baseline": f"{b_roc:.4f}",
+                "Logistic Regression": f"{lr_roc:.4f}",
+                "HistGradientBoosting": f"{hgb_metrics['roc_auc']:.4f}",
+            },
+            {
+                "Metric": "PR-AUC",
+                "Majority Baseline": f"{b_pr:.4f}",
+                "Logistic Regression": f"{lr_pr:.4f}",
+                "HistGradientBoosting": f"{hgb_metrics['pr_auc']:.4f}",
+            },
+        ]
+    )
 
     csv_path = rep_p / "model_comparison.csv"
     comparison_df.to_csv(csv_path, index=False)
 
     md_content = f"""# Model Comparison: Majority Baseline vs. Logistic Regression vs. HistGradientBoosting
 
-**Project**: AI-Powered Student Study Assistant MLOps  
-**Feature**: Feature A (Hobby Learning / Exercise Correctness Prediction)  
+**Project**: AI-Powered Student Study Assistant MLOps
+**Feature**: Feature A (Hobby Learning / Exercise Correctness Prediction)
 **Dataset**: ASSISTments 2009–2010 Corrected (Chronological Split: 80% Train, 20% Test)
 
 ## Comprehensive Metric Comparison
 
 | Metric | Majority Baseline | Logistic Regression | HistGradientBoosting | Best Model |
 |---|---|---|---|---|
-| **Accuracy** | {b_acc:.4f} | {lr_acc:.4f} | **{hgb_metrics['accuracy']:.4f}** | **HistGradientBoosting** |
-| **Precision** | {b_prec:.4f} | {lr_prec:.4f} | **{hgb_metrics['precision']:.4f}** | **HistGradientBoosting** |
-| **Recall** | **{b_rec:.4f}** | {lr_rec:.4f} | {hgb_metrics['recall']:.4f} | **Majority Baseline** (trivial 100%) / **Logistic Regression** (learned) |
-| **F1-score** | {b_f1:.4f} | **{lr_f1:.4f}** | {hgb_metrics['f1_score']:.4f} | **Logistic Regression** |
-| **ROC-AUC** | {b_roc:.4f} | **{lr_roc:.4f}** | {hgb_metrics['roc_auc']:.4f} | **Logistic Regression** |
-| **PR-AUC** | {b_pr:.4f} | **{lr_pr:.4f}** | {hgb_metrics['pr_auc']:.4f} | **Logistic Regression** |
+| **Accuracy** | {b_acc:.4f} | {lr_acc:.4f} | **{hgb_metrics["accuracy"]:.4f}** | **HistGradientBoosting** |
+| **Precision** | {b_prec:.4f} | {lr_prec:.4f} | **{hgb_metrics["precision"]:.4f}** | **HistGradientBoosting** |
+| **Recall** | **{b_rec:.4f}** | {lr_rec:.4f} | {hgb_metrics["recall"]:.4f} | **Majority Baseline** (trivial 100%) / **Logistic Regression** (learned) |
+| **F1-score** | {b_f1:.4f} | **{lr_f1:.4f}** | {hgb_metrics["f1_score"]:.4f} | **Logistic Regression** |
+| **ROC-AUC** | {b_roc:.4f} | **{lr_roc:.4f}** | {hgb_metrics["roc_auc"]:.4f} | **Logistic Regression** |
+| **PR-AUC** | {b_pr:.4f} | **{lr_pr:.4f}** | {hgb_metrics["pr_auc"]:.4f} | **Logistic Regression** |
 
 ---
 
 ## Detailed Model Analysis
 
 ### 1. Which model performs best on each metric?
-- **Accuracy**: **HistGradientBoosting** achieves the highest accuracy (`{hgb_metrics['accuracy']:.4f}`), edging out Logistic Regression (`{lr_acc:.4f}`) and the Baseline (`{b_acc:.4f}`).
-- **Precision**: **HistGradientBoosting** achieves highest precision (`{hgb_metrics['precision']:.4f}`), indicating the fewest false positive predictions when forecasting that a student will answer correctly.
-- **Recall**: **Majority Baseline** achieves a trivial `1.0000` recall by unconditionally predicting class 1 for every sample. Among genuine predictive models, **Logistic Regression** achieves higher recall (`{lr_rec:.4f}`) than HistGradientBoosting (`{hgb_metrics['recall']:.4f}`).
-- **F1-Score**: **Logistic Regression** achieves the top F1-score (`{lr_f1:.4f}` vs. `{hgb_metrics['f1_score']:.4f}`).
-- **ROC-AUC & PR-AUC**: **Logistic Regression** demonstrates slightly superior rank-ordering capability with an ROC-AUC of `{lr_roc:.4f}` (vs. `{hgb_metrics['roc_auc']:.4f}` for HGB) and PR-AUC of `{lr_pr:.4f}` (vs. `{hgb_metrics['pr_auc']:.4f}`).
+- **Accuracy**: **HistGradientBoosting** achieves the highest accuracy (`{hgb_metrics["accuracy"]:.4f}`), edging out Logistic Regression (`{lr_acc:.4f}`) and the Baseline (`{b_acc:.4f}`).
+- **Precision**: **HistGradientBoosting** achieves highest precision (`{hgb_metrics["precision"]:.4f}`), indicating the fewest false positive predictions when forecasting that a student will answer correctly.
+- **Recall**: **Majority Baseline** achieves a trivial `1.0000` recall by unconditionally predicting class 1 for every sample. Among genuine predictive models, **Logistic Regression** achieves higher recall (`{lr_rec:.4f}`) than HistGradientBoosting (`{hgb_metrics["recall"]:.4f}`).
+- **F1-Score**: **Logistic Regression** achieves the top F1-score (`{lr_f1:.4f}` vs. `{hgb_metrics["f1_score"]:.4f}`).
+- **ROC-AUC & PR-AUC**: **Logistic Regression** demonstrates slightly superior rank-ordering capability with an ROC-AUC of `{lr_roc:.4f}` (vs. `{hgb_metrics["roc_auc"]:.4f}` for HGB) and PR-AUC of `{lr_pr:.4f}` (vs. `{hgb_metrics["pr_auc"]:.4f}`).
 
 ### 2. Does HistGradientBoosting improve upon Logistic Regression?
-- **In Precision and Accuracy**: Yes. HistGradientBoosting improves accuracy to `{hgb_metrics['accuracy']:.4f}` (+{hgb_metrics['accuracy'] - lr_acc:.4f}) and precision to `{hgb_metrics['precision']:.4f}` (+{hgb_metrics['precision'] - lr_prec:.4f}).
-- **In Ranking and Probability Calibration**: No. Logistic Regression retains a slightly higher ROC-AUC (`{lr_roc:.4f}` vs. `{hgb_metrics['roc_auc']:.4f}`) and PR-AUC (`{lr_pr:.4f}` vs. `{hgb_metrics['pr_auc']:.4f}`). Both models perform closely, with Logistic Regression yielding smoother probability distributions across numerical history aggregations.
+- **In Precision and Accuracy**: Yes. HistGradientBoosting improves accuracy to `{hgb_metrics["accuracy"]:.4f}` (+{hgb_metrics["accuracy"] - lr_acc:.4f}) and precision to `{hgb_metrics["precision"]:.4f}` (+{hgb_metrics["precision"] - lr_prec:.4f}).
+- **In Ranking and Probability Calibration**: No. Logistic Regression retains a slightly higher ROC-AUC (`{lr_roc:.4f}` vs. `{hgb_metrics["roc_auc"]:.4f}`) and PR-AUC (`{lr_pr:.4f}` vs. `{hgb_metrics["pr_auc"]:.4f}`). Both models perform closely, with Logistic Regression yielding smoother probability distributions across numerical history aggregations.
 
 ### 3. Do the models outperform the majority baseline?
 - **Substantially Yes**: While the majority baseline reaches `{b_acc:.4f}` accuracy by ignoring class 0 entirely, its ROC-AUC is a random baseline `0.5000` with `0.0000` precision and recall on incorrect student responses.
 - Both Logistic Regression and HistGradientBoosting provide genuine diagnostic learning, separating student mastery from struggle with ROC-AUC ~`0.66` and PR-AUC ~`0.79`.
 
 ### 4. Meaningful trade-offs between Precision and Recall
-- **HistGradientBoosting** is slightly more conservative: it generates fewer false positive predictions (higher precision: `{hgb_metrics['precision']:.4f}`), classifying more uncertain attempts as incorrect. This is advantageous for identifying students who genuinely need help before they attempt an exercise.
+- **HistGradientBoosting** is slightly more conservative: it generates fewer false positive predictions (higher precision: `{hgb_metrics["precision"]:.4f}`), classifying more uncertain attempts as incorrect. This is advantageous for identifying students who genuinely need help before they attempt an exercise.
 - **Logistic Regression** is slightly more generous: it yields higher recall (`{lr_rec:.4f}`), capturing almost all correct outcomes while maintaining comparable overall discriminatory power.
 """
 
@@ -463,9 +463,7 @@ def train_and_track_hist_gradient_boosting(
     pipeline.fit(X_train, y_train)
 
     print("Evaluating HistGradientBoosting on chronological test set...")
-    metrics, cm, report_dict, report_text = evaluate_hgb(
-        pipeline, X_test, y_test, threshold=threshold
-    )
+    metrics, cm, report_dict, report_text = evaluate_hgb(pipeline, X_test, y_test, threshold=threshold)
 
     print("\n--- HistGradientBoosting Metrics ---")
     for k, v in metrics.items():
@@ -532,26 +530,28 @@ def train_and_track_hist_gradient_boosting(
 
     with mlflow.start_run(run_name=run_name) as run:
         # Log parameters
-        mlflow.log_params({
-            "model_name": "HistGradientBoostingClassifier",
-            "model_type": "ensemble_gradient_boosting",
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "max_leaf_nodes": max_leaf_nodes,
-            "max_depth": str(max_depth),
-            "min_samples_leaf": min_samples_leaf,
-            "l2_regularization": l2_regularization,
-            "class_weight": str(class_weight),
-            "random_state": random_state,
-            "classification_threshold": threshold,
-            "target_column": TARGET_COLUMN,
-            "dataset_identifier": str(events_path),
-            "train_test_split_configuration": f"chronological_order_id_test_size_{test_size}",
-            "n_train_samples": len(X_train),
-            "n_test_samples": len(X_test),
-            "n_features": len(FEATURE_COLUMNS),
-            "preprocessing_configuration": "SimpleImputer(strategy='median')",
-        })
+        mlflow.log_params(
+            {
+                "model_name": "HistGradientBoostingClassifier",
+                "model_type": "ensemble_gradient_boosting",
+                "learning_rate": learning_rate,
+                "max_iter": max_iter,
+                "max_leaf_nodes": max_leaf_nodes,
+                "max_depth": str(max_depth),
+                "min_samples_leaf": min_samples_leaf,
+                "l2_regularization": l2_regularization,
+                "class_weight": str(class_weight),
+                "random_state": random_state,
+                "classification_threshold": threshold,
+                "target_column": TARGET_COLUMN,
+                "dataset_identifier": str(events_path),
+                "train_test_split_configuration": f"chronological_order_id_test_size_{test_size}",
+                "n_train_samples": len(X_train),
+                "n_test_samples": len(X_test),
+                "n_features": len(FEATURE_COLUMNS),
+                "preprocessing_configuration": "SimpleImputer(strategy='median')",
+            }
+        )
 
         # Log metrics
         for metric_name, metric_val in metrics.items():
@@ -565,12 +565,14 @@ def train_and_track_hist_gradient_boosting(
         mlflow.log_artifact(str(md_rep), artifact_path="evaluation_reports")
 
         # Set tags
-        mlflow.set_tags({
-            "project": "AI-Powered Student Study Assistant",
-            "feature": "hobby_learning",
-            "model": "hist_gradient_boosting",
-            "model_family": "gradient_boosting",
-        })
+        mlflow.set_tags(
+            {
+                "project": "AI-Powered Student Study Assistant",
+                "feature": "hobby_learning",
+                "model": "hist_gradient_boosting",
+                "model_family": "gradient_boosting",
+            }
+        )
 
         # Log fitted sklearn pipeline model with signature and input example
         input_example = X_train.iloc[:5]
@@ -599,4 +601,3 @@ def train_and_track_hist_gradient_boosting(
 
 if __name__ == "__main__":
     train_and_track_hist_gradient_boosting()
-

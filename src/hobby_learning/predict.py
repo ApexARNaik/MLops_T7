@@ -65,4 +65,3 @@ def predict_proba(
             return np.asarray(probs[:, 0], dtype=float)
         return np.asarray(probs, dtype=float)
     raise AttributeError("Model does not support predict_proba.")
-
