@@ -442,5 +442,24 @@ def train_and_compare_models():
     return df_summary, best_model_name
 
 
+# ---------------------------------------------------------------------------
+# Backward-compatibility aliases (required by test_baseline.py)
+# ---------------------------------------------------------------------------
+
+class QuestionMeanBaseline(BaselineQuestionMeanModel):
+    """
+    Alias for BaselineQuestionMeanModel, preserved for backward compatibility
+    with existing test suite (test_baseline.py).
+    Extends predict() to accept the deprecated round_to_step kwarg.
+    """
+    def predict(self, X: pd.DataFrame, round_to_step: bool = True) -> np.ndarray:
+        preds = np.array([self.question_means_.get(str(q), self.global_mean_) for q in X["qid"]])
+        clipped = np.clip(preds, 0.0, self.max_mark)
+        if round_to_step:
+            factor = 1.0 / self.step
+            return np.clip(np.round(clipped * factor) / factor, 0.0, self.max_mark)
+        return clipped
+
+
 if __name__ == "__main__":
     train_and_compare_models()
