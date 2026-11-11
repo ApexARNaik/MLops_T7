@@ -121,8 +121,9 @@ def _load_metadata(model_key: str) -> dict[str, Any]:
     return metadata
 
 
-def _model_readiness() -> list[str]:
+def _model_readiness() -> tuple[list[str], list[dict[str, str]]]:
     missing: list[str] = []
+    models_info: list[dict[str, str]] = []
     for model_key, artifact_name in MODEL_ARTIFACTS.items():
         artifact_path = MODEL_DIR / artifact_name
         metadata_path = MODEL_DIR / MODEL_METADATA[model_key]
@@ -131,8 +132,23 @@ def _model_readiness() -> list[str]:
         if not metadata_path.is_file():
             missing.append(MODEL_METADATA[model_key])
         elif artifact_path.is_file():
-            _load_metadata(model_key)
-    return missing
+            meta = _load_metadata(model_key)
+            models_info.append({
+                "model_name": meta["model_name"],
+                "model_version": meta["model_version"],
+            })
+            # Validate actual loading capability
+            try:
+                if model_key == "learning":
+                    from src.hobby_learning.predict import load_model
+                    _ = load_model(artifact_path)
+                elif model_key == "answer":
+                    from src.answer_feedback.predict import get_model
+                    _ = get_model()
+            except Exception as exc:
+                log.error("Failed to load model %s: %exc", model_key, exc)
+                missing.append(f"{artifact_name} (corrupt or unpicklable: {exc})")
+    return missing, models_info
 
 
 def _prediction_envelope(
@@ -264,23 +280,16 @@ def health(request: Request) -> dict[str, str]:
 
 @app.get("/ready", tags=["operations"])
 def ready(request: Request) -> dict[str, Any]:
-    missing = _model_readiness()
+    missing, models_info = _model_readiness()
     if missing:
         raise HTTPException(
             status_code=503,
             detail={"status": "not_ready", "missing": missing},
         )
-    metadata = [_load_metadata(key) for key in MODEL_ARTIFACTS]
     return {
         "status": "ready",
         "request_id": _request_id(request),
-        "models": [
-            {
-                "model_name": model["model_name"],
-                "model_version": model["model_version"],
-            }
-            for model in metadata
-        ],
+        "models": models_info,
     }
 
 
