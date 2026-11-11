@@ -1,177 +1,365 @@
-"""
-Training and model export pipeline for Hobby-based Learning Assistant.
-Path: src/hobby_learning/train.py
+"""Training pipeline for Feature A: Hobby Learning - Majority Baseline Model.
+
+Project: AI-Powered Student Study Assistant MLOps
+Owner: Teammate AT
 """
 
-import os
+from __future__ import annotations
+
 import json
-import logging
+import os
 from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+import dagshub
 import joblib
+import mlflow
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
+from sklearn.dummy import DummyClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 
-try:
-    import mlflow
-except ImportError:
-    mlflow = None
 
-logger = logging.getLogger(__name__)
+# Configuration constants
+DEFAULT_EVENTS_PATH = Path("data/hobby_learning/processed/events.csv")
+MODELS_DIR = Path("models/hobby_learning")
+MLFLOW_TRACKING_URI = "https://dagshub.com/ApexARNaik/MLops_T7.mlflow"
+MLFLOW_EXPERIMENT_NAME = "hobby_learning"
+RUN_NAME = "majority_baseline"
+DAGSHUB_REPO_OWNER = "ApexARNaik"
+DAGSHUB_REPO_NAME = "MLops_T7"
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-MODELS_DIR = REPO_ROOT / "models"
-EVENTS_CSV = REPO_ROOT / "data" / "hobby_learning" / "processed" / "events.csv"
+# Feature definitions strictly preventing current-row outcome leakage
+TARGET_COLUMN = "correct"
+ORDER_COLUMN = "order_id"
 
-FEATS = [
-    "u_prev_n",
-    "u_prev_rate",
-    "u_prev_attempts_mean",
-    "gap_hours",
-    "n_concepts",
-    "p_rate",
-    "c_rate",
+FEATURE_COLUMNS = [
+    "user_prev_count",
+    "user_prev_accuracy",
+    "user_prev_attempts_mean",
+    "user_prev_hints_mean",
+    "user_skill_prev_count",
+    "user_skill_prev_accuracy",
+    "n_skill_components",
 ]
 
 
-def train_and_export():
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+def load_processed_data(file_path: Path | str = DEFAULT_EVENTS_PATH) -> pd.DataFrame:
+    """Load the processed events dataset.
 
-    if EVENTS_CSV.exists():
-        ev = pd.read_csv(EVENTS_CSV)
-        # Prepare real events
-        gm = float(ev["y"].mean())
-        att_med = float(ev["u_prev_attempts_mean"].median())
-        X = ev[FEATS].copy()
-        X["u_prev_rate"] = X["u_prev_rate"].fillna(gm)
-        X["u_prev_attempts_mean"] = X["u_prev_attempts_mean"].fillna(att_med)
-        X["gap_hours"] = X["gap_hours"].fillna(-1)
-        X["p_rate"] = X["p_rate"].fillna(gm)
-        X["c_rate"] = X["c_rate"].fillna(gm)
-        y = ev["y"].values
-    else:
-        # Fast initialization with representative sample data
-        gm = 0.675
-        att_med = 1.2
-        X = pd.DataFrame({
-            "u_prev_n": [5, 12, 2, 20, 8, 15, 1, 30, 10, 4],
-            "u_prev_rate": [0.6, 0.75, 0.5, 0.9, 0.65, 0.8, 0.4, 0.85, 0.7, 0.55],
-            "u_prev_attempts_mean": [1.2, 1.0, 2.1, 1.0, 1.4, 1.1, 2.5, 1.0, 1.3, 1.8],
-            "gap_hours": [24.0, 48.0, 2.0, 120.0, 12.0, 72.0, 1.0, 168.0, 36.0, 6.0],
-            "n_concepts": [1, 2, 1, 3, 2, 1, 1, 2, 2, 1],
-            "p_rate": [0.7, 0.8, 0.55, 0.85, 0.65, 0.78, 0.45, 0.9, 0.72, 0.6],
-            "c_rate": [0.68, 0.76, 0.52, 0.82, 0.63, 0.75, 0.48, 0.88, 0.70, 0.58],
+    Args:
+        file_path: Path to events.csv.
+
+    Returns:
+        pd.DataFrame containing processed interaction events.
+
+    Raises:
+        FileNotFoundError: If the processed events file is not found.
+    """
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Processed events file not found at: {path}. "
+            f"Please run `python -m src.hobby_learning.data` first."
+        )
+    return pd.read_csv(path)
+
+
+def prepare_features_and_target(
+    df: pd.DataFrame,
+    feature_cols: List[str] | None = None,
+    target_col: str = TARGET_COLUMN,
+) -> Tuple[pd.DataFrame, pd.Series]:
+    """Extract features and target while ensuring no target leakage.
+
+    Args:
+        df: Input DataFrame.
+        feature_cols: List of column names to use as features.
+        target_col: Target column name.
+
+    Returns:
+        Tuple of (X DataFrame, y Series).
+
+    Raises:
+        ValueError: If target column is included in feature columns.
+    """
+    if feature_cols is None:
+        feature_cols = FEATURE_COLUMNS
+
+    # Prevent target or current-attempt leakage
+    forbidden = {target_col, "attempt_count", "hint_count", "ms_first_response", "score"}
+    leaked = set(feature_cols).intersection(forbidden)
+    if leaked:
+        raise ValueError(f"Data leakage detected! Forbidden columns in features: {leaked}")
+
+    X = df[feature_cols].copy()
+    y = df[target_col].astype(int).copy()
+    return X, y
+
+
+def chronological_train_test_split(
+    df: pd.DataFrame,
+    test_size: float = 0.2,
+    order_col: str = ORDER_COLUMN,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Split interactions into train and test sets strictly chronologically.
+
+    Preserves chronological order using numeric order_id to prevent
+    future-to-past data leakage.
+
+    Args:
+        df: Input DataFrame.
+        test_size: Proportion of dataset to include in the test split.
+        order_col: Column to sort by chronologically.
+
+    Returns:
+        Tuple of (train_df, test_df).
+    """
+    sorted_df = df.sort_values(by=order_col).reset_index(drop=True)
+    split_idx = int(len(sorted_df) * (1.0 - test_size))
+    train_df = sorted_df.iloc[:split_idx].reset_index(drop=True)
+    test_df = sorted_df.iloc[split_idx:].reset_index(drop=True)
+    return train_df, test_df
+
+
+def train_majority_baseline(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+) -> DummyClassifier:
+    """Train a DummyClassifier using the majority-class strategy.
+
+    Args:
+        X_train: Training feature matrix.
+        y_train: Training binary targets.
+
+    Returns:
+        Fitted DummyClassifier.
+    """
+    clf = DummyClassifier(strategy="most_frequent")
+    clf.fit(X_train, y_train)
+    return clf
+
+
+def evaluate_predictions(
+    y_true: pd.Series | np.ndarray,
+    y_pred: np.ndarray,
+    y_prob: np.ndarray | None = None,
+) -> Tuple[Dict[str, float], np.ndarray, Dict[str, Any], str]:
+    """Compute classification metrics, confusion matrix, and report.
+
+    Args:
+        y_true: True binary targets.
+        y_pred: Predicted binary labels.
+        y_prob: Predicted positive class probabilities (optional).
+
+    Returns:
+        Tuple of (metrics_dict, confusion_matrix, classification_report_dict, classification_report_text).
+    """
+    y_true_arr = np.asarray(y_true, dtype=int)
+    acc = float(accuracy_score(y_true_arr, y_pred))
+    prec = float(precision_score(y_true_arr, y_pred, zero_division=0))
+    rec = float(recall_score(y_true_arr, y_pred, zero_division=0))
+    f1 = float(f1_score(y_true_arr, y_pred, zero_division=0))
+
+    metrics: Dict[str, float] = {
+        "accuracy": acc,
+        "precision": prec,
+        "recall": rec,
+        "f1_score": f1,
+    }
+
+    if y_prob is not None:
+        try:
+            # Check if there are at least two distinct classes in true labels
+            if len(np.unique(y_true_arr)) > 1:
+                auc = float(roc_auc_score(y_true_arr, y_prob))
+                metrics["roc_auc"] = auc
+        except Exception:
+            pass
+
+    cm = confusion_matrix(y_true_arr, y_pred)
+    report_dict = classification_report(y_true_arr, y_pred, output_dict=True, zero_division=0)
+    report_text = classification_report(y_true_arr, y_pred, zero_division=0)
+
+    return metrics, cm, report_dict, report_text
+
+
+def save_baseline_artifacts(
+    model: DummyClassifier,
+    metrics: Dict[str, float],
+    cm: np.ndarray,
+    report_text: str,
+    metadata: Dict[str, Any],
+    output_dir: Path | str = MODELS_DIR,
+) -> Dict[str, Path]:
+    """Save model and evaluation artifacts locally.
+
+    Args:
+        model: Trained DummyClassifier model.
+        metrics: Evaluation metrics dictionary.
+        cm: Confusion matrix numpy array.
+        report_text: Classification report text.
+        metadata: Training run metadata.
+        output_dir: Target directory for saving.
+
+    Returns:
+        Dictionary mapping artifact names to their file paths.
+    """
+    out_path = Path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    model_file = out_path / "baseline_model.joblib"
+    cm_file = out_path / "confusion_matrix.json"
+    report_file = out_path / "classification_report.txt"
+    meta_file = out_path / "metadata.json"
+
+    joblib.dump(model, model_file)
+
+    with open(cm_file, "w", encoding="utf-8") as f:
+        json.dump(cm.tolist(), f, indent=2)
+
+    with open(report_file, "w", encoding="utf-8") as f:
+        f.write(report_text)
+
+    with open(meta_file, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+
+    return {
+        "model": model_file,
+        "confusion_matrix": cm_file,
+        "classification_report": report_file,
+        "metadata": meta_file,
+    }
+
+
+def train_and_track(
+    events_path: Path | str = DEFAULT_EVENTS_PATH,
+    test_size: float = 0.2,
+    tracking_uri: str = MLFLOW_TRACKING_URI,
+    experiment_name: str = MLFLOW_EXPERIMENT_NAME,
+    run_name: str = RUN_NAME,
+) -> Dict[str, Any]:
+    """Execute training pipeline and track run in MLflow / DagsHub.
+
+    Args:
+        events_path: Path to processed events.csv.
+        test_size: Chronological test set fraction.
+        tracking_uri: MLflow tracking URI.
+        experiment_name: MLflow experiment name.
+        run_name: MLflow run name.
+
+    Returns:
+        Summary dictionary of results and metrics.
+    """
+    print(f"Loading data from {events_path}...")
+    df = load_processed_data(events_path)
+
+    print(f"Splitting data chronologically (test_size={test_size})...")
+    train_df, test_df = chronological_train_test_split(df, test_size=test_size)
+
+    X_train, y_train = prepare_features_and_target(train_df)
+    X_test, y_test = prepare_features_and_target(test_df)
+
+    print(f"Train samples: {len(X_train)}, Test samples: {len(X_test)}")
+    print(f"Train majority class: {y_train.mode()[0]}")
+
+    print("Training DummyClassifier (strategy='most_frequent')...")
+    clf = train_majority_baseline(X_train, y_train)
+
+    print("Evaluating predictions on chronological test set...")
+    y_pred = clf.predict(X_test)
+    y_prob = clf.predict_proba(X_test)[:, 1] if hasattr(clf, "predict_proba") else None
+
+    metrics, cm, report_dict, report_text = evaluate_predictions(y_test, y_pred, y_prob)
+
+    print("\n--- Evaluation Metrics ---")
+    for k, v in metrics.items():
+        print(f"{k}: {v:.4f}")
+    print("\nConfusion Matrix:")
+    print(cm)
+    print("\nClassification Report:")
+    print(report_text)
+
+    metadata: Dict[str, Any] = {
+        "model_name": "DummyClassifier",
+        "strategy": "most_frequent",
+        "target_column": TARGET_COLUMN,
+        "training_dataset": str(events_path),
+        "train_test_split_configuration": f"chronological_order_id_test_size_{test_size}",
+        "n_train_samples": len(X_train),
+        "n_test_samples": len(X_test),
+        "n_features": len(FEATURE_COLUMNS),
+        "features": FEATURE_COLUMNS,
+        "metrics": metrics,
+    }
+
+    # Save artifacts locally
+    print(f"Saving baseline artifacts to {MODELS_DIR}...")
+    saved_files = save_baseline_artifacts(clf, metrics, cm, report_text, metadata, output_dir=MODELS_DIR)
+
+    # MLflow Tracking
+    print(f"Tracking run in MLflow (URI: {tracking_uri}, Experiment: {experiment_name})...")
+    try:
+        dagshub.init(
+            repo_owner=DAGSHUB_REPO_OWNER,
+            repo_name=DAGSHUB_REPO_NAME,
+            mlflow=True,
+        )
+    except Exception as e:
+        print(f"Note: dagshub.init encountered: {e}. Falling back to mlflow URI directly.")
+
+    mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(experiment_name)
+
+    with mlflow.start_run(run_name=run_name) as run:
+        # Log parameters
+        mlflow.log_params({
+            "model_name": "DummyClassifier",
+            "model_strategy": "most_frequent",
+            "target_column": TARGET_COLUMN,
+            "training_dataset": str(events_path),
+            "train_test_split_configuration": f"chronological_split_{test_size}",
+            "n_train_samples": len(X_train),
+            "n_test_samples": len(X_test),
+            "n_features": len(FEATURE_COLUMNS),
         })
-        y = np.array([1, 1, 0, 1, 1, 1, 0, 1, 1, 0])
 
-    model = make_pipeline(StandardScaler(), LogisticRegression())
-    model.fit(X[FEATS], y)
+        # Log metrics
+        for metric_name, metric_val in metrics.items():
+            mlflow.log_metric(metric_name, metric_val)
 
-    # Save model artifact
-    model_path = MODELS_DIR / "learning_model.joblib"
-    joblib.dump(model, model_path)
+        # Log artifacts
+        for name, fpath in saved_files.items():
+            mlflow.log_artifact(str(fpath), artifact_path="baseline_artifacts")
 
-    # Save metadata
-    meta = {
-        "model_name": "study-assistant-learning-model",
-        "model_version": "1.0.0",
-        "mlflow_run_id": "fast_run_learning_001",
-        "git_commit": "e1ebc23",
-        "features": FEATS,
-        "metrics": {
-            "f1": 0.833,
-            "precision": 0.857,
-            "recall": 0.810,
-            "roc_auc": 0.875,
-        },
-        "global_rate": gm,
-        "attempts_median": att_med,
-        "trained_on": "MOOCCubeX user-problem slice",
-        "limitations": "Slice not random; Chinese MOOC population; probability is an estimate.",
+        # Set tags
+        mlflow.set_tags({
+            "project": "AI-Powered Student Study Assistant MLOps",
+            "feature": "Feature A: Hobby Learning",
+            "model_type": "baseline",
+            "model_family": "heuristic",
+        })
+
+        run_id = run.info.run_id
+        print(f"MLflow Run completed successfully! Run ID: {run_id}")
+
+    return {
+        "run_id": run_id,
+        "metrics": metrics,
+        "confusion_matrix": cm.tolist(),
+        "metadata": metadata,
+        "saved_files": {k: str(v) for k, v in saved_files.items()},
     }
-    with open(MODELS_DIR / "learning_meta.json", "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2)
-
-    # Save lookup stats
-    p_df = pd.DataFrame([
-        {"problem_id": "problem-1", "p_rate": 0.75},
-        {"problem_id": "problem-2", "p_rate": 0.60},
-        {"problem_id": "p1", "p_rate": 0.80},
-        {"problem_id": "p2", "p_rate": 0.55},
-        {"problem_id": "p3", "p_rate": 0.70},
-    ])
-    p_df.to_csv(MODELS_DIR / "problem_stats.csv", index=False)
-
-    c_df = pd.DataFrame([
-        {"concept_id": "ratios", "c_rate": 0.72},
-        {"concept_id": "fractions", "c_rate": 0.65},
-        {"concept_id": "periodic_functions", "c_rate": 0.58},
-        {"concept_id": "angles", "c_rate": 0.80},
-        {"concept_id": "probability", "c_rate": 0.70},
-    ])
-    c_df.to_csv(MODELS_DIR / "concept_stats.csv", index=False)
-
-    l_df = pd.DataFrame([
-        {"user_id": "learner-1", "u_prev_n": 15, "u_prev_rate": 0.73},
-        {"user_id": "learner-2", "u_prev_n": 8, "u_prev_rate": 0.50},
-        {"user_id": "u1", "u_prev_n": 10, "u_prev_rate": 0.80},
-    ])
-    l_df.to_csv(MODELS_DIR / "demo_learners.csv", index=False)
-
-    # Hobby map
-    hobby_map = {
-        "Music": {
-            "ratios": {
-                "topic": "Ratios",
-                "valid": True,
-                "analogy": "An octave is a 2:1 frequency ratio and a perfect fifth is 3:2.",
-                "worked_example": "A string at 220 Hz sounds an octave above at 440 Hz.",
-                "why_valid": "Pitch intervals are defined by frequency ratios.",
-                "limits": "Only covers ratio intuition, not ratio word problems.",
-            },
-            "fractions": {
-                "topic": "Fractions",
-                "valid": True,
-                "analogy": "Musical time signatures and notes (whole, half, quarter, eighth) represent fractional divisions of a measure.",
-                "worked_example": "Two half notes or four quarter notes equal one whole note (1/2 + 1/2 = 1).",
-                "why_valid": "Rhythm and meter are exact fractional divisions.",
-                "limits": "Does not explain non-standard fraction arithmetic.",
-            },
-            "limits": {
-                "topic": "Limits",
-                "valid": False,
-                "reason": "No sound analogy that is mathematically accurate.",
-            },
-        },
-        "Gaming": {
-            "probability": {
-                "topic": "Probability",
-                "valid": True,
-                "analogy": "Loot drop rates and critical strike chances are calculated using event probabilities.",
-                "worked_example": "A 5% critical strike chance means an expected 1 in 20 hits.",
-                "why_valid": "Game mechanics directly employ RNG probability distributions.",
-                "limits": "Pseudo-random distribution algorithms may alter raw odds in games.",
-            }
-        },
-        "Sports": {
-            "angles": {
-                "topic": "Angles",
-                "valid": True,
-                "analogy": "Passing and shooting trajectories in soccer or basketball depend directly on launch angle.",
-                "worked_example": "A 45-degree trajectory maximizes projectile range.",
-                "why_valid": "Kinematic vector physics defines flight paths.",
-                "limits": "Wind and spin deflect real ball flights.",
-            }
-        },
-    }
-    with open(MODELS_DIR / "hobby_map.json", "w", encoding="utf-8") as f:
-        json.dump(hobby_map, f, indent=2)
-
-    print("Hobby learning training & artifact export complete.")
 
 
 if __name__ == "__main__":
-    train_and_export()
+    train_and_track()
 

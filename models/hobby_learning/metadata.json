@@ -1,0 +1,26 @@
+{
+  "model_name": "DummyClassifier",
+  "strategy": "most_frequent",
+  "target_column": "correct",
+  "training_dataset": "data\\hobby_learning\\processed\\events.csv",
+  "train_test_split_configuration": "chronological_order_id_test_size_0.2",
+  "n_train_samples": 277488,
+  "n_test_samples": 69372,
+  "n_features": 7,
+  "features": [
+    "user_prev_count",
+    "user_prev_accuracy",
+    "user_prev_attempts_mean",
+    "user_prev_hints_mean",
+    "user_skill_prev_count",
+    "user_skill_prev_accuracy",
+    "n_skill_components"
+  ],
+  "metrics": {
+    "accuracy": 0.6914893617021277,
+    "precision": 0.6914893617021277,
+    "recall": 1.0,
+    "f1_score": 0.8176100628930818,
+    "roc_auc": 0.5
+  }
+}
