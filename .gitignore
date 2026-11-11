@@ -1,8 +1,10 @@
 
 .venv/
+venv/
 __pycache__/
 *.py[cod]
 .env
+.env.*
 *.db
 mlruns/
 mlartifacts/
@@ -10,4 +12,6 @@ data/*/raw/
 data/*/interim/
 *.pdf
 .pytest_cache/
+.coverage
+htmlcov/
 .dvc/tmp/
