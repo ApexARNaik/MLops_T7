@@ -198,9 +198,10 @@ def recommend(payload: Dict[str, Any]) -> Dict[str, Any]:
     feature_df = pd.DataFrame([{col: feature_values.get(col, 0.0) for col in feature_names}])
 
     # 6. Predict Probability and Binary Class
+    classification_threshold = float(meta.get("classification_threshold", 0.5))
     probs = predict_proba(model, feature_df)
     p_correct = float(np.clip(probs[0], 0.0, 1.0))
-    predicted_correct = bool(p_correct >= 0.5)
+    predicted_correct = bool(p_correct >= classification_threshold)
 
     # 7. Identify Weak Concepts
     weak_concepts = [topic] if c_rate < 0.65 else []

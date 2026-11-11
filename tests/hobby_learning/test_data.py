@@ -8,7 +8,6 @@ import pytest
 from src.hobby_learning.data import (
     clean_and_validate_data,
     engineer_historical_features,
-    load_dataset,
     normalize_skills,
     process_dataset,
 )

@@ -18,6 +18,7 @@
     "recall": 0.81,
     "roc_auc": 0.875
   },
+  "classification_threshold": 0.5,
   "global_rate": 0.675,
   "attempts_median": 1.2,
   "trained_on": "MOOCCubeX user-problem slice",

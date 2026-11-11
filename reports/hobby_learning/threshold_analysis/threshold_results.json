@@ -1,0 +1,371 @@
+{
+  "dataset": {
+    "source": "data\\hobby_learning\\processed\\events.csv",
+    "total_records": 346860,
+    "split_type": "chronological_order_id",
+    "train_samples": 242801,
+    "val_samples": 52030,
+    "test_samples": 52029,
+    "train_fraction": 0.7,
+    "val_fraction": 0.15,
+    "test_fraction": 0.15,
+    "features": [
+      "user_prev_count",
+      "user_prev_accuracy",
+      "user_prev_attempts_mean",
+      "user_prev_hints_mean",
+      "user_skill_prev_count",
+      "user_skill_prev_accuracy",
+      "n_skill_components"
+    ],
+    "target": "correct"
+  },
+  "logistic_regression": {
+    "validation_selection": {
+      "selected_best_f1": {
+        "threshold": 0.4,
+        "accuracy": 0.6944455122044974,
+        "precision": 0.6787470575896707,
+        "recall": 0.9323238467202356,
+        "f1_score": 0.7855794130340958,
+        "specificity": 0.3370845957774251,
+        "balanced_accuracy": 0.6347042212488303,
+        "false_positive_count": 13784,
+        "false_negative_count": 2114,
+        "true_positive_count": 29123,
+        "true_negative_count": 7009,
+        "confusion_matrix": [
+          [
+            7009,
+            13784
+          ],
+          [
+            2114,
+            29123
+          ]
+        ],
+        "model": "LogisticRegression"
+      },
+      "highest_precision": {
+        "threshold": 0.85,
+        "accuracy": 0.4326926773015568,
+        "precision": 0.8510204081632653,
+        "recall": 0.06674776707110158,
+        "f1_score": 0.1237866239202066,
+        "specificity": 0.9824460154859809,
+        "balanced_accuracy": 0.5245968912785413,
+        "false_positive_count": 365,
+        "false_negative_count": 29152,
+        "true_positive_count": 2085,
+        "true_negative_count": 20428,
+        "confusion_matrix": [
+          [
+            20428,
+            365
+          ],
+          [
+            29152,
+            2085
+          ]
+        ],
+        "model": "LogisticRegression"
+      },
+      "highest_recall": {
+        "threshold": 0.1,
+        "accuracy": 0.6048241399192773,
+        "precision": 0.6033254616546011,
+        "recall": 0.9978230944072735,
+        "f1_score": 0.7519752952387846,
+        "specificity": 0.014427932477276006,
+        "balanced_accuracy": 0.5061255134422747,
+        "false_positive_count": 20493,
+        "false_negative_count": 68,
+        "true_positive_count": 31169,
+        "true_negative_count": 300,
+        "confusion_matrix": [
+          [
+            300,
+            20493
+          ],
+          [
+            68,
+            31169
+          ]
+        ],
+        "model": "LogisticRegression"
+      },
+      "highest_balanced_accuracy": {
+        "threshold": 0.6,
+        "accuracy": 0.6869882759946185,
+        "precision": 0.7278351772271494,
+        "recall": 0.7645100361750489,
+        "f1_score": 0.7457219585311017,
+        "specificity": 0.5705285432597509,
+        "balanced_accuracy": 0.6675192897173998,
+        "false_positive_count": 8930,
+        "false_negative_count": 7356,
+        "true_positive_count": 23881,
+        "true_negative_count": 11863,
+        "confusion_matrix": [
+          [
+            11863,
+            8930
+          ],
+          [
+            7356,
+            23881
+          ]
+        ],
+        "model": "LogisticRegression"
+      },
+      "baseline_0_50": {
+        "threshold": 0.5,
+        "accuracy": 0.7016913319238901,
+        "precision": 0.704326798065422,
+        "recall": 0.8671447322085988,
+        "f1_score": 0.7773010976397159,
+        "specificity": 0.45313326600298176,
+        "balanced_accuracy": 0.6601389991057902,
+        "false_positive_count": 11371,
+        "false_negative_count": 4150,
+        "true_positive_count": 27087,
+        "true_negative_count": 9422,
+        "confusion_matrix": [
+          [
+            9422,
+            11371
+          ],
+          [
+            4150,
+            27087
+          ]
+        ],
+        "model": "LogisticRegression"
+      }
+    },
+    "test_metrics_selected": {
+      "threshold": 0.4,
+      "accuracy": 0.7055296084875743,
+      "precision": 0.7063699996089626,
+      "recall": 0.9916829074140155,
+      "f1_score": 0.8250568071525629,
+      "specificity": 0.037184254391588664,
+      "balanced_accuracy": 0.5144335809028021,
+      "false_positive_count": 15018,
+      "false_negative_count": 303,
+      "true_positive_count": 36128,
+      "true_negative_count": 580,
+      "confusion_matrix": [
+        [
+          580,
+          15018
+        ],
+        [
+          303,
+          36128
+        ]
+      ],
+      "model": "LogisticRegression",
+      "threshold_type": "selected_best_f1"
+    },
+    "test_metrics_050": {
+      "threshold": 0.5,
+      "accuracy": 0.7107190220838379,
+      "precision": 0.7205669954194693,
+      "recall": 0.9586066811232192,
+      "f1_score": 0.8227145835541892,
+      "specificity": 0.13174765995640467,
+      "balanced_accuracy": 0.545177170539812,
+      "false_positive_count": 13543,
+      "false_negative_count": 1508,
+      "true_positive_count": 34923,
+      "true_negative_count": 2055,
+      "confusion_matrix": [
+        [
+          2055,
+          13543
+        ],
+        [
+          1508,
+          34923
+        ]
+      ],
+      "model": "LogisticRegression",
+      "threshold_type": "default_0.50"
+    }
+  },
+  "hist_gradient_boosting": {
+    "validation_selection": {
+      "selected_best_f1": {
+        "threshold": 0.4,
+        "accuracy": 0.7016721122429368,
+        "precision": 0.6815881306186592,
+        "recall": 0.9441687742100714,
+        "f1_score": 0.7916733773554517,
+        "specificity": 0.33737315442697063,
+        "balanced_accuracy": 0.640770964318521,
+        "false_positive_count": 13778,
+        "false_negative_count": 1744,
+        "true_positive_count": 29493,
+        "true_negative_count": 7015,
+        "confusion_matrix": [
+          [
+            7015,
+            13778
+          ],
+          [
+            1744,
+            29493
+          ]
+        ],
+        "model": "HistGradientBoostingClassifier"
+      },
+      "highest_precision": {
+        "threshold": 0.9,
+        "accuracy": 0.40628483567172785,
+        "precision": 0.8844444444444445,
+        "recall": 0.012741300380958479,
+        "f1_score": 0.025120711963896866,
+        "specificity": 0.9974991583706055,
+        "balanced_accuracy": 0.505120229375782,
+        "false_positive_count": 52,
+        "false_negative_count": 30839,
+        "true_positive_count": 398,
+        "true_negative_count": 20741,
+        "confusion_matrix": [
+          [
+            20741,
+            52
+          ],
+          [
+            30839,
+            398
+          ]
+        ],
+        "model": "HistGradientBoostingClassifier"
+      },
+      "highest_recall": {
+        "threshold": 0.1,
+        "accuracy": 0.6370939842398616,
+        "precision": 0.6236118059029515,
+        "recall": 0.997695041137113,
+        "f1_score": 0.7674974141752451,
+        "specificity": 0.0953686336747944,
+        "balanced_accuracy": 0.5465318374059537,
+        "false_positive_count": 18810,
+        "false_negative_count": 72,
+        "true_positive_count": 31165,
+        "true_negative_count": 1983,
+        "confusion_matrix": [
+          [
+            1983,
+            18810
+          ],
+          [
+            72,
+            31165
+          ]
+        ],
+        "model": "HistGradientBoostingClassifier"
+      },
+      "highest_balanced_accuracy": {
+        "threshold": 0.6,
+        "accuracy": 0.6860272919469537,
+        "precision": 0.7494225168223361,
+        "recall": 0.7166501264526043,
+        "f1_score": 0.73267002683773,
+        "specificity": 0.6400230846919637,
+        "balanced_accuracy": 0.6783366055722839,
+        "false_positive_count": 7485,
+        "false_negative_count": 8851,
+        "true_positive_count": 22386,
+        "true_negative_count": 13308,
+        "confusion_matrix": [
+          [
+            13308,
+            7485
+          ],
+          [
+            8851,
+            22386
+          ]
+        ],
+        "model": "HistGradientBoostingClassifier"
+      },
+      "baseline_0_50": {
+        "threshold": 0.5,
+        "accuracy": 0.7094945223909284,
+        "precision": 0.7082407646602945,
+        "recall": 0.8776771136792906,
+        "f1_score": 0.7839078159177663,
+        "specificity": 0.45683643533881596,
+        "balanced_accuracy": 0.6672567745090533,
+        "false_positive_count": 11294,
+        "false_negative_count": 3821,
+        "true_positive_count": 27416,
+        "true_negative_count": 9499,
+        "confusion_matrix": [
+          [
+            9499,
+            11294
+          ],
+          [
+            3821,
+            27416
+          ]
+        ],
+        "model": "HistGradientBoostingClassifier"
+      }
+    },
+    "test_metrics_selected": {
+      "threshold": 0.4,
+      "accuracy": 0.7064906110054008,
+      "precision": 0.7087608524072613,
+      "recall": 0.9859734841206664,
+      "f1_score": 0.8246949294578182,
+      "specificity": 0.05372483651750224,
+      "balanced_accuracy": 0.5198491603190843,
+      "false_positive_count": 14760,
+      "false_negative_count": 511,
+      "true_positive_count": 35920,
+      "true_negative_count": 838,
+      "confusion_matrix": [
+        [
+          838,
+          14760
+        ],
+        [
+          511,
+          35920
+        ]
+      ],
+      "model": "HistGradientBoostingClassifier",
+      "threshold_type": "selected_best_f1"
+    },
+    "test_metrics_050": {
+      "threshold": 0.5,
+      "accuracy": 0.7047415864229565,
+      "precision": 0.7183813926491014,
+      "recall": 0.9512228596524938,
+      "f1_score": 0.8185661981811739,
+      "specificity": 0.12905500705218617,
+      "balanced_accuracy": 0.54013893335234,
+      "false_positive_count": 13585,
+      "false_negative_count": 1777,
+      "true_positive_count": 34654,
+      "true_negative_count": 2013,
+      "confusion_matrix": [
+        [
+          2013,
+          13585
+        ],
+        [
+          1777,
+          34654
+        ]
+      ],
+      "model": "HistGradientBoostingClassifier",
+      "threshold_type": "default_0.50"
+    }
+  }
+}
