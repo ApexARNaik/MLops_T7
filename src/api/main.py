@@ -16,7 +16,8 @@ from src.answer_feedback import predict as feedback
 from src.common.schemas import ApproveRequest, FeedbackRequest, HobbyRequest
 from src.hobby_learning import predict as hobby
 
-MODEL_DIR = Path("models")
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MODEL_DIR = REPO_ROOT / "models"
 MODEL_ARTIFACTS = {
     "learning": "learning_model.joblib",
     "answer": "answer_model.joblib",
@@ -125,14 +126,14 @@ def _model_readiness() -> tuple[list[str], list[dict[str, str]]]:
     missing: list[str] = []
     models_info: list[dict[str, str]] = []
 
-    # 1. Check supporting files if running in production (MODEL_DIR is default "models")
-    if MODEL_DIR == Path("models"):
+    # 1. Check supporting files if running in production (MODEL_DIR is default models directory)
+    if MODEL_DIR == REPO_ROOT / "models":
         supporting_files = [
             MODEL_DIR / "hobby_map.json",
             MODEL_DIR / "problem_stats.csv",
             MODEL_DIR / "concept_stats.csv",
             MODEL_DIR / "demo_learners.csv",
-            Path("data/answer_feedback/processed/rubric.json"),
+            REPO_ROOT / "data" / "answer_feedback" / "processed" / "rubric.json",
         ]
         for sup_file in supporting_files:
             if not sup_file.is_file():

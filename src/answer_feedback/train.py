@@ -26,26 +26,28 @@ Strict Anti-Leakage Constraints:
 """
 
 import os
-import sys
 import json
 import hashlib
 import joblib
 import subprocess
 import numpy as np
 import pandas as pd
-import mlflow
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, Tuple
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.linear_model import Ridge
-from sklearn.ensemble import HistGradientBoostingRegressor, GradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
+
+try:
+    import mlflow
+except ImportError:
+    mlflow = None
 
 from src.answer_feedback.features import (
     generate_feature_dataset,
     compute_question_means,
     OUTPUT_FEATURES_CSV,
     DEFAULT_RUBRIC_JSON,
-    PROCESSED_MARKS_CSV
 )
 
 # MLflow and export configuration
@@ -68,6 +70,7 @@ RANDOM_SEED = 42
 # ---------------------------------------------------------------------------
 # Utility & Metric Functions
 # ---------------------------------------------------------------------------
+
 
 def get_git_commit_hash() -> str:
     """Retrieves current git commit hash safely."""
@@ -119,8 +122,10 @@ def evaluate_predictions(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, fl
 # Model Implementations
 # ---------------------------------------------------------------------------
 
+
 class BaselineQuestionMeanModel:
     """Model 1: Per-Question Mean baseline."""
+
     def __init__(self, step: float = 0.5, max_mark: float = 2.0):
         self.step = step
         self.max_mark = max_mark
@@ -141,6 +146,7 @@ class BaselineQuestionMeanModel:
 
 class BaselineTfidfRidgeModel:
     """Model 2: Ridge regression on text similarity + length + question mean."""
+
     def __init__(self, alpha: float = 1.0, max_mark: float = 2.0):
         self.alpha = alpha
         self.max_mark = max_mark
@@ -160,6 +166,7 @@ class BaselineTfidfRidgeModel:
 
 class CandidateGradientBoostingModel:
     """Model 3: HistGradientBoosting on full feature set."""
+
     def __init__(self, max_mark: float = 2.0):
         self.max_mark = max_mark
         self.feature_cols = [
@@ -170,14 +177,10 @@ class CandidateGradientBoostingModel:
             "log_words",
             "question_mean_mark",
             "max_mark",
-            "is_missing"
+            "is_missing",
         ]
         self.model = HistGradientBoostingRegressor(
-            max_iter=100,
-            learning_rate=0.05,
-            max_depth=3,
-            min_samples_leaf=10,
-            random_state=RANDOM_SEED
+            max_iter=100, learning_rate=0.05, max_depth=3, min_samples_leaf=10, random_state=RANDOM_SEED
         )
 
     def fit(self, X: pd.DataFrame, y: np.ndarray):
@@ -195,10 +198,9 @@ class CandidateGradientBoostingModel:
 # Cross-Validation Evaluator
 # ---------------------------------------------------------------------------
 
+
 def run_group_kfold_cv(
-    model_factory,
-    df_features: pd.DataFrame,
-    model_name: str
+    model_factory, df_features: pd.DataFrame, model_name: str
 ) -> Tuple[Dict[str, float], Dict[str, float], np.ndarray, Any]:
     """
     Executes 5-fold GroupKFold CV.
@@ -251,6 +253,7 @@ def run_group_kfold_cv(
 # Training Orchestration & Registry
 # ---------------------------------------------------------------------------
 
+
 def train_and_compare_models():
     print("=" * 80)
     print("ANSWER FEEDBACK MODEL TRAINING & COMPARISON")
@@ -264,7 +267,9 @@ def train_and_compare_models():
         df_features = pd.read_csv(OUTPUT_FEATURES_CSV)
 
     print(f"Dataset shape: {df_features.shape}")
-    print(f"Total students: {df_features['student_id'].nunique()}, Short-answer questions: {df_features['qid'].nunique()}")
+    print(
+        f"Total students: {df_features['student_id'].nunique()}, Short-answer questions: {df_features['qid'].nunique()}"
+    )
 
     # Setup MLflow
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
@@ -275,10 +280,25 @@ def train_and_compare_models():
 
     models_to_train = [
         ("baseline_question_mean", lambda: BaselineQuestionMeanModel(), ["qid", "question_mean_mark"]),
-        ("baseline_tfidf_ridge", lambda: BaselineTfidfRidgeModel(alpha=1.0), ["tfidf_cos", "n_words", "log_words", "question_mean_mark"]),
-        ("candidate_gradient_boosting", lambda: CandidateGradientBoostingModel(), [
-            "tfidf_cos", "coverage", "max_point_hit", "n_words", "log_words", "question_mean_mark", "max_mark", "is_missing"
-        ])
+        (
+            "baseline_tfidf_ridge",
+            lambda: BaselineTfidfRidgeModel(alpha=1.0),
+            ["tfidf_cos", "n_words", "log_words", "question_mean_mark"],
+        ),
+        (
+            "candidate_gradient_boosting",
+            lambda: CandidateGradientBoostingModel(),
+            [
+                "tfidf_cos",
+                "coverage",
+                "max_point_hit",
+                "n_words",
+                "log_words",
+                "question_mean_mark",
+                "max_mark",
+                "is_missing",
+            ],
+        ),
     ]
 
     results_table = []
@@ -308,9 +328,11 @@ def train_and_compare_models():
             # Calculate and save per-question MAE breakdown
             df_eval = df_features[["student_id", "qid", "mark"]].copy()
             df_eval["oof_pred"] = oof_preds
-            per_q = df_eval.groupby("qid").apply(
-                lambda g: mean_absolute_error(g["mark"], g["oof_pred"])
-            ).reset_index(name="mae")
+            per_q = (
+                df_eval.groupby("qid")
+                .apply(lambda g: mean_absolute_error(g["mark"], g["oof_pred"]))
+                .reset_index(name="mae")
+            )
             per_q_file = os.path.join(DOCS_DIR, f"per_q_mae_{model_name}.csv")
             os.makedirs(DOCS_DIR, exist_ok=True)
             per_q.to_csv(per_q_file, index=False)
@@ -322,17 +344,17 @@ def train_and_compare_models():
                 "std_metrics": std_m,
                 "model_obj": trained_model,
                 "features": feature_list,
-                "per_q_df": per_q
+                "per_q_df": per_q,
             }
 
             res = {
                 "model_name": model_name,
                 "MAE": f"{mean_m['mean_mae']:.4f} ± {std_m['std_mae']:.4f}",
                 "RMSE": f"{mean_m['mean_rmse']:.4f} ± {std_m['std_rmse']:.4f}",
-                "Exact_Acc": f"{mean_m['mean_exact_accuracy']*100:.1f}%",
-                "Within_0.5_Acc": f"{mean_m['mean_within_0.5_accuracy']*100:.1f}%",
-                "Within_1.0_Acc": f"{mean_m['mean_within_1.0_accuracy']*100:.1f}%",
-                "run_id": run.info.run_id
+                "Exact_Acc": f"{mean_m['mean_exact_accuracy'] * 100:.1f}%",
+                "Within_0.5_Acc": f"{mean_m['mean_within_0.5_accuracy'] * 100:.1f}%",
+                "Within_1.0_Acc": f"{mean_m['mean_within_1.0_accuracy'] * 100:.1f}%",
+                "run_id": run.info.run_id,
             }
             results_table.append(res)
             print(f" -> {model_name} MAE: {res['MAE']} | RMSE: {res['RMSE']} | Within-0.5: {res['Within_0.5_Acc']}")
@@ -362,11 +384,11 @@ def train_and_compare_models():
     # Export selected model to models/answer_model.joblib
     os.makedirs(MODELS_DIR, exist_ok=True)
     import src.answer_feedback.train as train_mod
+
     model_to_save = best_info["model_obj"]
     # Recreate as clean instance of the module's class to avoid __main__ pickling issues
     clean_model = train_mod.BaselineQuestionMeanModel(
-        step=getattr(model_to_save, "step", 0.5),
-        max_mark=getattr(model_to_save, "max_mark", 2.0)
+        step=getattr(model_to_save, "step", 0.5), max_mark=getattr(model_to_save, "max_mark", 2.0)
     )
     clean_model.question_means_ = dict(getattr(model_to_save, "question_means_", {}))
     clean_model.global_mean_ = float(getattr(model_to_save, "global_mean_", 1.0))
@@ -378,7 +400,7 @@ def train_and_compare_models():
         "Trained on question-level mean marks and interim OCR segmented student answers.",
         "Handwritten OCR text coverage is currently partial in interim pipeline.",
         "If OCR text is missing, predictions gracefully fall back to question_mean_mark without assigning artificial zero marks.",
-        "Evaluated with 5-fold GroupKFold by student_id to prevent intra-student data leakage."
+        "Evaluated with 5-fold GroupKFold by student_id to prevent intra-student data leakage.",
     ]
 
     meta = {
@@ -387,17 +409,15 @@ def train_and_compare_models():
         "mlflow_run_id": best_info["run_id"],
         "git_commit": git_commit,
         "features": best_info["features"],
-        "metrics": {
-            "cv_5fold": {**best_info["mean_metrics"], **best_info["std_metrics"]}
-        },
+        "metrics": {"cv_5fold": {**best_info["mean_metrics"], **best_info["std_metrics"]}},
         "trained_on": {
             "dataset": "Mendeley Student Examination Papers (Anonymized)",
             "n_students": int(df_features["student_id"].nunique()),
             "n_records": int(len(df_features)),
-            "short_answer_questions": "Q21-Q35"
+            "short_answer_questions": "Q21-Q35",
         },
         "rubric_version": rubric_hash,
-        "limitations": limitations
+        "limitations": limitations,
     }
 
     with open(META_EXPORT_PATH, "w", encoding="utf-8") as f:
@@ -407,6 +427,7 @@ def train_and_compare_models():
     # Register winner in MLflow
     try:
         from mlflow.tracking import MlflowClient
+
         client = MlflowClient()
 
         # Log model artifact inside run
@@ -418,22 +439,18 @@ def train_and_compare_models():
         model_uri = f"runs:/{best_info['run_id']}/model"
         print(f"Registering model in MLflow Model Registry as '{REGISTERED_MODEL_NAME}'...")
         registered_model = mlflow.register_model(model_uri, REGISTERED_MODEL_NAME)
-        
+
         # Set champion alias
         try:
             client.set_registered_model_alias(
-                name=REGISTERED_MODEL_NAME,
-                alias=MODEL_ALIAS,
-                version=registered_model.version
+                name=REGISTERED_MODEL_NAME, alias=MODEL_ALIAS, version=registered_model.version
             )
             print(f"Successfully assigned alias '@{MODEL_ALIAS}' to version {registered_model.version}")
         except Exception as e:
             # Fallback if alias API varies with MLflow client version
             try:
                 client.transition_model_version_stage(
-                    name=REGISTERED_MODEL_NAME,
-                    version=registered_model.version,
-                    stage="Production"
+                    name=REGISTERED_MODEL_NAME, version=registered_model.version, stage="Production"
                 )
                 print(f"Set stage to Production (alias fallback: {e})")
             except Exception as e2:
@@ -446,7 +463,11 @@ def train_and_compare_models():
     print("\n" + "=" * 80)
     print("FINAL MODEL COMPARISON TABLE")
     print("=" * 80)
-    print(df_summary[["model_name", "MAE", "RMSE", "Exact_Acc", "Within_0.5_Acc", "Within_1.0_Acc"]].to_string(index=False))
+    print(
+        df_summary[["model_name", "MAE", "RMSE", "Exact_Acc", "Within_0.5_Acc", "Within_1.0_Acc"]].to_string(
+            index=False
+        )
+    )
 
     return df_summary, best_model_name
 
@@ -455,12 +476,14 @@ def train_and_compare_models():
 # Backward-compatibility aliases (required by test_baseline.py)
 # ---------------------------------------------------------------------------
 
+
 class QuestionMeanBaseline(BaselineQuestionMeanModel):
     """
     Alias for BaselineQuestionMeanModel, preserved for backward compatibility
     with existing test suite (test_baseline.py).
     Extends predict() to accept the deprecated round_to_step kwarg.
     """
+
     def predict(self, X: pd.DataFrame, round_to_step: bool = True) -> np.ndarray:
         preds = np.array([self.question_means_.get(str(q), self.global_mean_) for q in X["qid"]])
         clipped = np.clip(preds, 0.0, self.max_mark)
